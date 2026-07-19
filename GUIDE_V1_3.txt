@@ -1,3 +1,7 @@
+SOLÉO RENTABILITÉ LAB V1.3.1 — CORRECTIF RENFORT EXTÉRIEUR
+
+Correctif : le renfort extérieur actualisé est désormais affiché sous forme d’un total unique avec un historique repliable. Les saisies existantes restent modifiables et supprimables. Aucune donnée chantier n’est supprimée ni transformée.
+
 SOLÉO RENTABILITÉ LAB V1.3 — TABLEAU DE BORD CHANTIER
 
 Nouveautés :
