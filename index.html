@@ -397,7 +397,7 @@
       <div class="actions"><button class="btn" id="addMaintenanceEntry">+ Ajouter une dépense de maintenance</button></div>
       <div class="calc-strip"><div><b id="maintenanceTotal">—</b><span>maintenance enregistrée</span></div><div><b>40 €/j</b><span>coût interne mini-pelle actuel</span></div></div>
     </div>
-    <div class="card"><div class="summary-ok"><strong>Base Soléo V1.1 :</strong> 1 journée = 8 h ; mini-pelle 40 €/jour d'utilisation ; repas 10 €/repas ; rémunération Jimmy au coût employeur complet ; IK séparées ; plus de seuil arbitraire 400 / 550 €/jour.</div></div>
+    <div class="card"><div class="summary-ok"><strong>Base Soléo V1.0 :</strong> 1 journée = 8 h ; mini-pelle 40 €/jour d'utilisation ; repas 10 €/repas ; rémunération Jimmy au coût employeur complet ; IK séparées ; plus de seuil arbitraire 400 / 550 €/jour.</div></div>
   </section>
 
   <section id="sync" class="view">
@@ -458,11 +458,14 @@
   <section id="data" class="view">
     <div class="card">
       <h2>Données du LAB V1.1</h2>
-      <p class="muted">Stockage séparé du Pilot Terrain. Les données restent locales immédiatement et peuvent être synchronisées dans le cloud entre PC et iPhone.</p>
+      <p class="muted">Stockage séparé du Pilot Terrain. Exporte une sauvegarde avant chaque mise à jour. Tu peux aussi restaurer un ancien fichier JSON ici.</p>
+      <input id="importBackupInput" class="hidden" type="file" accept="application/json,.json">
       <div class="actions">
         <button class="btn" id="exportBtn">Exporter tout le LAB JSON</button>
+        <button class="btn primary" id="importBackupBtn">Importer une sauvegarde JSON</button>
         <button class="btn danger" id="clearBtn">Effacer les données locales de cet appareil</button>
       </div>
+      <div id="importBackupStatus" class="mini muted" style="margin-top:10px">Aucune sauvegarde importée.</div>
     </div>
   </section>
 </main>
@@ -555,7 +558,7 @@ let cloudBusy=false;
 function defaultFinance(){return {fixedCharges:DEFAULT_FIXED_CHARGES.map(x=>({...x})),temporaryCharges:[],productiveDays:21,remunerationMonthlyCost:3665.51,commonMileageMonthly:0,maintenanceEntries:[],legacySocialMonthlyRemoved:1600}}
 function defaultPrevision(){return {timeMode:'day',timeValue:0,mealAuto:true,mealCount:0,mealCost:10,miniPelleDays:0,miniPelleDaily:40,jobRental:0,jobOtherDirect:0,salaryPerDay:96,externalWorkers:[],manualSupplyExpenses:[]}}
 function defaultActual(){return {trackingMode:'daily',retrospective:{jimmyHours:0,miniPelleDays:0,meals:0,workerHours:0},elapsedTimeMode:'hour',elapsedTimeValue:0,timeMode:'day',timeValue:0,miniPelleDays:0,mealCount:0,mealCost:10,jobRental:0,jobOtherDirect:0,rentalExpenses:[],directExpenses:[],externalWorkers:[],lineCosts:{},dailyEntries:[],legacyDailyEntries:[],lineProgress:{},validationCheckpoints:[],finalSnapshot:null}}
-function defaultApp(){return {version:'1.1',finance:defaultFinance(),projects:[],activeProjectId:null}}
+function defaultApp(){return {version:'1.0',finance:defaultFinance(),projects:[],activeProjectId:null}}
 
 function chargeNet(c){const a=Number(c.amount)||0;return c.mode==='ttc20'?a/1.2:a}
 function modeOptions(current){return Object.entries(CHARGE_MODES).map(([id,label])=>`<option value="${id}" ${id===current?'selected':''}>${esc(label)}</option>`).join('')}
@@ -724,7 +727,7 @@ let app=loadApp();
 let editingDailyEntryId=null;
 if(!app){const legacy=loadLegacy();app=legacy?migrateLegacy(legacy):defaultApp();saveApp()}
 app.projects=Array.isArray(app.projects)?app.projects.map(ensureProject):[];ensureFinance();
-app.version='1.0';
+app.version='1.1';
 if(app.activeProjectId&&!app.projects.some(p=>p.id===app.activeProjectId))app.activeProjectId=app.projects[0]?.id||null;
 saveApp();
 let pdfjsLib=null;
@@ -1348,7 +1351,7 @@ function renderActual(){
   renderDailyLog(p,readonly);renderExpenseLists(p,readonly);renderActualWorkers(p,readonly);renderLineProgress(p,readonly);renderActualLines(p,readonly);
   const deltaTotal=m.resultBeforeTaxTotal-base.resultBeforeTaxTotal,deltaCls=deltaDay>=0?'ok':'bad';
   const comparison=quality.reliable?`<div class="verdict ${deltaCls}" style="margin-top:12px"><div>${deltaDay>=0?'PROJECTION AU-DESSUS DE LA SIGNATURE':'PROJECTION SOUS LA SIGNATURE'}</div><div class="mini" style="margin-top:7px;font-weight:600">Prévu ${eur(base.resultBeforeTaxPerDay)}/j → actualisé ${eur(m.resultBeforeTaxPerDay)}/j avant IS. Écart ${deltaDay>=0?'+':''}${eur(deltaDay)}/j et ${deltaTotal>=0?'+':''}${eur(deltaTotal)} au total.</div></div>`:`<div class="verdict warn" style="margin-top:12px"><div>⚠️ COMPARAISON SIGNATURE NON FIABLE</div><div class="mini" style="margin-top:7px;font-weight:600">${esc(quality.reason)} Le résultat économique actualisé reste calculé, mais le rouge prévu / réel ne doit pas servir à juger ce chantier.</div></div>`;
-  $('actualComparison').innerHTML=`<div class="stage-kpis"><div class="kpi"><div class="name">Marge après coûts directs</div><div class="value">${eur(m.marginAfterDirectTotal)}</div><div class="note">${eur(m.marginAfterDirectPerDay)}/j</div></div><div class="kpi"><div class="name">Après structure Soléo</div><div class="value">${eur(m.afterStructureTotal)}</div><div class="note">${eur(m.afterStructurePerDay)}/j</div></div><div class="kpi"><div class="name">Résultat avant IS</div><div class="value">${eur(m.resultBeforeTaxTotal)}</div><div class="note">${eur(m.resultBeforeTaxPerDay)}/j</div></div></div>${comparison}<div class="summary-note" style="margin-top:12px"><strong>Lecture V1.1 :</strong> le journal ou la saisie rétrospective est la source du réel. Tant que le chantier n’est pas terminé, la projection garde par prudence au moins les quantités prévues de mini-pelle, repas et renfort, puis augmente si le réel les dépasse.</div>`;
+  $('actualComparison').innerHTML=`<div class="stage-kpis"><div class="kpi"><div class="name">Marge après coûts directs</div><div class="value">${eur(m.marginAfterDirectTotal)}</div><div class="note">${eur(m.marginAfterDirectPerDay)}/j</div></div><div class="kpi"><div class="name">Après structure Soléo</div><div class="value">${eur(m.afterStructureTotal)}</div><div class="note">${eur(m.afterStructurePerDay)}/j</div></div><div class="kpi"><div class="name">Résultat avant IS</div><div class="value">${eur(m.resultBeforeTaxTotal)}</div><div class="note">${eur(m.resultBeforeTaxPerDay)}/j</div></div></div>${comparison}<div class="summary-note" style="margin-top:12px"><strong>Lecture V1.0 :</strong> le journal ou la saisie rétrospective est la source du réel. Tant que le chantier n’est pas terminé, la projection garde par prudence au moins les quantités prévues de mini-pelle, repas et renfort, puis augmente si le réel les dépasse.</div>`;
   const frozenAt=a.finalSnapshot?.frozenAt;$('actualFinishActions').innerHTML=readonly?`<div class="summary-ok">🔒 Bilan final figé${frozenAt?` le ${new Date(frozenAt).toLocaleString('fr-FR')}`:''}.</div>`:'<button class="btn primary" id="finishProjectBtn">✅ Marquer le chantier terminé et figer le bilan réel</button>';$('finishProjectBtn')?.addEventListener('click',()=>finishProject(p,m));
 }
 function finishProject(p,m){
@@ -1422,7 +1425,47 @@ $('addFixedCharge').addEventListener('click',()=>{app.finance.fixedCharges.push(
 $('addTemporaryCharge').addEventListener('click',()=>{app.finance.temporaryCharges.push({id:uid(),name:'Produits / consommables',amount:0,mode:'net',months:3,active:true});saveApp();renderCharges();renderForecast();renderActual()});
 
 const fileInput=$('pdfFile'),drop=$('dropZone');fileInput.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)parsePdf(f)});['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));drop.addEventListener('drop',e=>{const f=e.dataTransfer.files?.[0];if(f&&f.type==='application/pdf')parsePdf(f);else alert('Choisis un fichier PDF.')});
-$('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(app,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='soleo-rentabilite-lab-v09-rentabilite-reelle.json';a.click();URL.revokeObjectURL(a.href)});
+$('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(app,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='soleo-rentabilite-lab-v11-sauvegarde-'+todayIso()+'.json';a.click();URL.revokeObjectURL(a.href)});
+$('importBackupBtn').addEventListener('click',()=>$('importBackupInput').click());
+$('importBackupInput').addEventListener('change',e=>{
+  const file=e.target.files?.[0];
+  if(!file)return;
+  const status=$('importBackupStatus');
+  status.textContent='Lecture de la sauvegarde…';
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const raw=JSON.parse(String(reader.result||''));
+      let imported;
+      if(raw&&Array.isArray(raw.projects)) imported=raw;
+      else if(raw&&Array.isArray(raw.lines)) imported=migrateLegacy(raw);
+      else throw new Error('format');
+      const count=Array.isArray(imported.projects)?imported.projects.length:0;
+      const currentCount=Array.isArray(app.projects)?app.projects.length:0;
+      const message=currentCount
+        ? `Cette importation remplacera les ${currentCount} chantier(s) actuellement présents sur cet appareil par ${count} chantier(s) de la sauvegarde. Continuer ?`
+        : `Importer ${count} chantier(s) depuis cette sauvegarde ?`;
+      if(!confirm(message)){status.textContent='Importation annulée.';e.target.value='';return}
+      app={...defaultApp(),...imported};
+      app.projects=Array.isArray(app.projects)?app.projects.map(ensureProject):[];
+      ensureFinance();
+      app.version='1.1';
+      if(app.activeProjectId&&!app.projects.some(p=>p.id===app.activeProjectId))app.activeProjectId=app.projects[0]?.id||null;
+      saveLocalOnly();
+      markCloudDirty();
+      renderAll();
+      switchView('projects');
+      status.textContent=`Sauvegarde importée : ${app.projects.length} chantier(s).`;
+      showToast(`Sauvegarde restaurée : ${app.projects.length} chantier(s)`);
+    }catch(err){
+      console.error('Import sauvegarde',err);
+      status.textContent='Fichier invalide ou incompatible.';
+      showToast('Impossible d’importer cette sauvegarde','bad');
+    }finally{e.target.value=''}
+  };
+  reader.onerror=()=>{status.textContent='Impossible de lire le fichier.';showToast('Erreur de lecture du fichier','bad');e.target.value=''};
+  reader.readAsText(file);
+});
 $('clearBtn').addEventListener('click',()=>{if(!confirm('Effacer les données locales de cet appareil ? Le cloud ne sera pas effacé.'))return;storageRemove(STORAGE_KEY);app=defaultApp();ensureFinance();saveLocalOnly();clearCloudDirty();renderAll();switchView('projects')});
 
 let lastScrollY=window.scrollY;

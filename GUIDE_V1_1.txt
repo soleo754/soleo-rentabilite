@@ -1,12 +1,16 @@
-SOLÉO PILOT — RENTABILITÉ LAB V1.1
+SOLÉO PILOT — RENTABILITÉ LAB V1.1 — VERSION FINALE AVEC IMPORT JSON
 
-1. Décompresser le ZIP.
-2. Envoyer index.html et _headers sur Cloudflare Pages / GitHub à la place de la V1.0.
-3. Avant la mise à jour, exporter une sauvegarde JSON depuis l'application.
-4. Après publication, les données locales restent compatibles. En cas de changement d'appareil ou de navigateur, importer la sauvegarde JSON.
+MISE À JOUR
+1. Exporter une sauvegarde JSON depuis l'application actuelle si elle contient encore des données.
+2. Remplacer sur GitHub les fichiers index.html, _headers et GUIDE_V1_1.txt.
+3. Faire Commit changes. Cloudflare redéploie automatiquement.
+4. Ouvrir l'application et actualiser avec Ctrl+F5.
+5. Aller dans Données LAB puis cliquer sur « Importer une sauvegarde JSON ».
+6. Choisir le fichier de sauvegarde .json et confirmer le remplacement des données locales.
 
-NOUVEAUTÉS V1.1
-- Une seule zone de totaux pour la main-d'œuvre Soléo, le renfort, la mini-pelle personnelle et les repas.
-- Historique repliable pour éviter les lignes visibles en permanence.
-- Modification et suppression de chaque saisie historique.
-- Les locations d'engins sont saisies une seule fois dans « Locations / engins spécifiques » avec la facture finale.
+CONTENU V1.1
+- Totaux regroupés pour main-d'œuvre Soléo, renfort, mini-pelle personnelle et repas.
+- Historique repliable, modifiable et supprimable.
+- Locations d'engins séparées et saisies avec leur facture finale.
+- Export JSON daté.
+- Import/restauration JSON compatible avec les sauvegardes V0.9/V1.0.
