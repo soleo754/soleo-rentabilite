@@ -1,0 +1,12 @@
+SOLÉO PILOT — RENTABILITÉ LAB V1.1
+
+1. Décompresser le ZIP.
+2. Envoyer index.html et _headers sur Cloudflare Pages / GitHub à la place de la V1.0.
+3. Avant la mise à jour, exporter une sauvegarde JSON depuis l'application.
+4. Après publication, les données locales restent compatibles. En cas de changement d'appareil ou de navigateur, importer la sauvegarde JSON.
+
+NOUVEAUTÉS V1.1
+- Une seule zone de totaux pour la main-d'œuvre Soléo, le renfort, la mini-pelle personnelle et les repas.
+- Historique repliable pour éviter les lignes visibles en permanence.
+- Modification et suppression de chaque saisie historique.
+- Les locations d'engins sont saisies une seule fois dans « Locations / engins spécifiques » avec la facture finale.
