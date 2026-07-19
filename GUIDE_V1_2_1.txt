@@ -1,0 +1,17 @@
+SOLÉO RENTABILITÉ LAB V1.2.1 — CORRECTIF IMPORT
+
+Correctif principal :
+- import des sauvegardes V0.9 / V1.0 / V1.1 / V1.2 ;
+- prise en charge des fichiers JSON avec BOM ou enveloppe app/data ;
+- conversion et normalisation automatiques des anciens chantiers ;
+- les données sont enregistrées avant le rafraîchissement de l'écran ;
+- message d'erreur plus précis.
+
+MISE EN LIGNE
+1. Remplacer index.html dans GitHub par celui de ce dossier.
+2. Remplacer aussi _headers.
+3. Faire le commit.
+4. Ouvrir l'application et faire Ctrl + F5.
+5. Vérifier que l'en-tête indique LAB V1.2.1.
+6. Importer la sauvegarde JSON exportée depuis l'iPhone.
+7. Contrôler les journées récentes, puis exporter une nouvelle sauvegarde V1.2.1.
