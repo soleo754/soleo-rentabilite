@@ -1,0 +1,12 @@
+SOLÉO RENTABILITÉ LAB V1.3 — TABLEAU DE BORD CHANTIER
+
+Nouveautés :
+- feu de pilotage vert / orange / rouge sur chaque chantier ;
+- comparaison directe avec l’objectif de résultat avant IS par jour ;
+- objectif configurable dans « Charges Soléo » (400 €/jour par défaut) ;
+- indication de la qualité des données et des postes encore incomplets ;
+- rentabilité quotidienne alignée sur le même objectif ;
+- aucun calcul automatique de date de fin.
+
+Déploiement : remplace index.html et _headers, puis force l’actualisation avec Ctrl+F5.
+Avant toute mise à jour, conserve toujours un export JSON récent.
