@@ -1,0 +1,16 @@
+SOLÉO PILOT — RENTABILITÉ LAB V1.2
+
+MISE À JOUR
+1. Exporter une sauvegarde JSON depuis l’application actuelle.
+2. Envoyer index.html, _headers et GUIDE_V1_2.txt dans le dépôt GitHub soleo-rentabilite.
+3. Faire Commit changes et attendre le redéploiement Cloudflare.
+4. Actualiser avec Ctrl+F5. Les données locales restent compatibles.
+
+NOUVEAUTÉS V1.2
+- Rentabilité quotidienne calculée uniquement lorsque la valeur HT des travaux du jour est renseignée.
+- Coût complet de la journée : structure, rémunération, renfort, mini-pelle et repas.
+- Historique quotidien avec statut rentable, faible ou déficitaire.
+- Totaux cumulés et nombre de journées rentables.
+- Modification et suppression des saisies conservées.
+- Import/export JSON conservé.
+- Aucune estimation automatique de date de fin de chantier.

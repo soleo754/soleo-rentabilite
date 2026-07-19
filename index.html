@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Soléo Pilot — Rentabilité LAB V1.1 Totaux + historique</title>
+  <title>Soléo Pilot — Rentabilité LAB V1.2 Pilotage quotidien</title>
   <style>
     :root{
       --bg:#101417;--panel:#171d21;--panel2:#1f282e;--text:#f3f5f7;--muted:#aeb8c2;
@@ -128,13 +128,21 @@
       .forecast-cost-row .money{text-align:left}.stage-kpis{grid-template-columns:1fr}
       header{position:static;transform:none!important}body.mobile-header-hidden .mobile-project-chip{display:block}
     }
+
+    .day-profit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+    .day-profit-card{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px}
+    .day-profit-card .value{font-size:21px;font-weight:900;margin-top:4px}.day-profit-card .label{font-size:11px;color:var(--muted);font-weight:800}
+    .daily-profit-row{display:grid;grid-template-columns:110px minmax(160px,1.3fr) repeat(3,minmax(105px,.7fr)) minmax(160px,1fr);gap:8px;align-items:center;padding:11px 12px;border-top:1px solid var(--line)}
+    .daily-profit-row:first-child{border-top:0}.daily-profit-row.good{border-left:5px solid var(--ok)}.daily-profit-row.warn{border-left:5px solid var(--warn)}.daily-profit-row.bad{border-left:5px solid var(--bad)}.daily-profit-row.neutral{border-left:5px solid #69757c}
+    .profit-pill{display:inline-block;border-radius:999px;padding:5px 8px;font-size:11px;font-weight:900}.profit-pill.good{background:#163020;color:#adf0c3}.profit-pill.warn{background:#322814;color:#ffdb96}.profit-pill.bad{background:#32181b;color:#ffb4b4}.profit-pill.neutral{background:#263039;color:#c4cdd3}
+    @media(max-width:720px){.day-profit-grid{grid-template-columns:1fr 1fr}.daily-profit-row{display:block}.daily-profit-row>div{margin-bottom:7px}}
   </style>
 </head>
 <body>
 <header>
   <div class="top">
     <div class="brand"><div class="logo">SP</div><div><h1>Soléo Pilot — Rentabilité</h1><div class="sub">Multi-chantiers + lecteur PDF renforcé + suivi réel + moteur rentabilité réelle + suivi terrain — prototype séparé du Pilot Terrain</div></div></div>
-    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.1 Totaux + historique</div></div>
+    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.2 Pilotage quotidien</div></div>
   </div>
   <nav>
     <button data-view="projects" class="active">Chantiers</button>
@@ -284,11 +292,18 @@
         <div id="dailyRentalAmountWrap" class="hidden"><input id="dailyRentalAmount" inputmode="decimal" value="0"></div>
         <div><label>Repas Soléo payés</label><input id="dailyMeals" inputmode="decimal" value="1"></div>
         <div><label>Heures renfort sur ce chantier</label><input id="dailyWorkerHours" inputmode="decimal" placeholder="Ex : 5"></div>
+        <div><label>Valeur des travaux réalisés aujourd’hui HT (€)</label><input id="dailyProductionHT" inputmode="decimal" placeholder="Ex : 1 250"><div class="mini muted">Saisie facultative mais nécessaire pour calculer honnêtement la rentabilité de la journée.</div></div>
         <div><label>Note rapide</label><textarea id="dailyNote" placeholder="Ex : fondations maison 1, retard pluie, livraison ferraille…"></textarea></div>
       </div>
       <div class="actions"><button class="btn primary" id="saveDailyEntry">💾 Enregistrer la journée</button></div>
       <div id="dailySummary" class="calc-strip"></div>
       <details id="dailyHistory" class="history-box"><summary>▼ Voir / modifier l’historique des saisies</summary><div id="dailyEntriesList" class="daily-list"></div></details>
+    </div>
+    <div class="card" id="dailyProfitCard">
+      <h3>📊 Rentabilité quotidienne</h3>
+      <div class="muted mini">Le résultat d’une journée n’est affiché que si tu renseignes la valeur HT des travaux réalisés. L’application ne devine pas et ne projette aucune date de fin.</div>
+      <div id="dailyProfitSummary" class="day-profit-grid"></div>
+      <details class="history-box" id="dailyProfitHistory"><summary>▼ Voir l’historique de rentabilité jour par jour</summary><div id="dailyProfitList"></div></details>
     </div>
     <div class="card hidden" id="retrospectiveCard">
       <h3>🧾 Saisie rétrospective du chantier</h3>
@@ -397,7 +412,7 @@
       <div class="actions"><button class="btn" id="addMaintenanceEntry">+ Ajouter une dépense de maintenance</button></div>
       <div class="calc-strip"><div><b id="maintenanceTotal">—</b><span>maintenance enregistrée</span></div><div><b>40 €/j</b><span>coût interne mini-pelle actuel</span></div></div>
     </div>
-    <div class="card"><div class="summary-ok"><strong>Base Soléo V1.0 :</strong> 1 journée = 8 h ; mini-pelle 40 €/jour d'utilisation ; repas 10 €/repas ; rémunération Jimmy au coût employeur complet ; IK séparées ; plus de seuil arbitraire 400 / 550 €/jour.</div></div>
+    <div class="card"><div class="summary-ok"><strong>Base Soléo V1.2 :</strong> 1 journée = 8 h ; mini-pelle 40 €/jour d'utilisation ; repas 10 €/repas ; rémunération Jimmy au coût employeur complet ; IK séparées ; plus de seuil arbitraire 400 / 550 €/jour.</div></div>
   </section>
 
   <section id="sync" class="view">
@@ -457,7 +472,7 @@
 
   <section id="data" class="view">
     <div class="card">
-      <h2>Données du LAB V1.1</h2>
+      <h2>Données du LAB V1.2</h2>
       <p class="muted">Stockage séparé du Pilot Terrain. Exporte une sauvegarde avant chaque mise à jour. Tu peux aussi restaurer un ancien fichier JSON ici.</p>
       <input id="importBackupInput" class="hidden" type="file" accept="application/json,.json">
       <div class="actions">
@@ -466,6 +481,7 @@
         <button class="btn danger" id="clearBtn">Effacer les données locales de cet appareil</button>
       </div>
       <div id="importBackupStatus" class="mini muted" style="margin-top:10px">Aucune sauvegarde importée.</div>
+      <div class="summary-ok" style="margin-top:14px"><strong>V1.2 :</strong> rentabilité quotidienne avec production HT saisie, coût complet par journée, historique clair, modification/suppression des saisies, import/export JSON et aucune estimation automatique de date de fin.</div>
     </div>
   </section>
 </main>
@@ -558,7 +574,7 @@ let cloudBusy=false;
 function defaultFinance(){return {fixedCharges:DEFAULT_FIXED_CHARGES.map(x=>({...x})),temporaryCharges:[],productiveDays:21,remunerationMonthlyCost:3665.51,commonMileageMonthly:0,maintenanceEntries:[],legacySocialMonthlyRemoved:1600}}
 function defaultPrevision(){return {timeMode:'day',timeValue:0,mealAuto:true,mealCount:0,mealCost:10,miniPelleDays:0,miniPelleDaily:40,jobRental:0,jobOtherDirect:0,salaryPerDay:96,externalWorkers:[],manualSupplyExpenses:[]}}
 function defaultActual(){return {trackingMode:'daily',retrospective:{jimmyHours:0,miniPelleDays:0,meals:0,workerHours:0},elapsedTimeMode:'hour',elapsedTimeValue:0,timeMode:'day',timeValue:0,miniPelleDays:0,mealCount:0,mealCost:10,jobRental:0,jobOtherDirect:0,rentalExpenses:[],directExpenses:[],externalWorkers:[],lineCosts:{},dailyEntries:[],legacyDailyEntries:[],lineProgress:{},validationCheckpoints:[],finalSnapshot:null}}
-function defaultApp(){return {version:'1.0',finance:defaultFinance(),projects:[],activeProjectId:null}}
+function defaultApp(){return {version:'1.2',finance:defaultFinance(),projects:[],activeProjectId:null}}
 
 function chargeNet(c){const a=Number(c.amount)||0;return c.mode==='ttc20'?a/1.2:a}
 function modeOptions(current){return Object.entries(CHARGE_MODES).map(([id,label])=>`<option value="${id}" ${id===current?'selected':''}>${esc(label)}</option>`).join('')}
@@ -727,7 +743,7 @@ let app=loadApp();
 let editingDailyEntryId=null;
 if(!app){const legacy=loadLegacy();app=legacy?migrateLegacy(legacy):defaultApp();saveApp()}
 app.projects=Array.isArray(app.projects)?app.projects.map(ensureProject):[];ensureFinance();
-app.version='1.1';
+app.version='1.2';
 if(app.activeProjectId&&!app.projects.some(p=>p.id===app.activeProjectId))app.activeProjectId=app.projects[0]?.id||null;
 saveApp();
 let pdfjsLib=null;
@@ -1091,14 +1107,43 @@ function renderTrackingMode(p,readonly){
     ['retroJimmyHours','retroMiniDays','retroMeals','retroWorkerHours'].forEach(id=>$(id).disabled=readonly);
   }
 }
+function dailyWorkerEntryCost(p,e){
+  const hours=Number(e?.workerHours)||0;if(!hours)return 0;
+  const w=linkedWorker(p);const unit=w?.unit||'day',rate=Number(w?.unitCost)||200,mode=w?.mode||'no_vat';
+  const gross=unit==='hour'?hours*rate:unit==='fixed'?rate:(hours/8)*rate;
+  return chargeNet({amount:gross,mode});
+}
+function dailyProfitMetrics(p,e){
+  const jimmyHours=Number(e?.jimmyHours)||0,days=jimmyHours/8;
+  const miniRate=Number(p?.signatureSnapshot?.prevision?.miniPelleDaily??p?.prevision?.miniPelleDaily)||40;
+  const mealRate=Number(p?.actual?.mealCost??p?.signatureSnapshot?.prevision?.mealCost)||10;
+  const costs={
+    structure:days*allCommonDailyCharge(),
+    remuneration:days*remunerationDailyCharge(),
+    worker:dailyWorkerEntryCost(p,e),
+    mini:(Number(e?.miniShare)||0)*miniRate,
+    meals:(Number(e?.meals)||0)*mealRate
+  };
+  const totalCost=Object.values(costs).reduce((s,x)=>s+x,0),production=Number(e?.productionHT)||0,hasProduction=production>0,result=hasProduction?production-totalCost:null;
+  let cls='neutral',label='Production non saisie';
+  if(hasProduction){if(result<0){cls='bad';label='Déficitaire'}else if(result<250){cls='warn';label='Rentable mais faible'}else{cls='good';label='Rentable'}}
+  return {production,totalCost,result,hasProduction,cls,label,costs};
+}
+function renderDailyProfit(p){
+  const entries=[...(p.actual.dailyEntries||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt).localeCompare(String(a.createdAt)));
+  const rows=entries.map(e=>({e,m:dailyProfitMetrics(p,e)})),known=rows.filter(x=>x.m.hasProduction),totalProd=sum(known,x=>x.m.production),totalCost=sum(known,x=>x.m.totalCost),totalResult=totalProd-totalCost,profitable=known.filter(x=>x.m.result>=0).length;
+  $('dailyProfitSummary').innerHTML=`<div class="day-profit-card"><div class="label">Journées calculables</div><div class="value">${known.length}/${entries.length}</div></div><div class="day-profit-card"><div class="label">Production HT saisie</div><div class="value">${eur(totalProd)}</div></div><div class="day-profit-card"><div class="label">Résultat cumulé connu</div><div class="value">${known.length?eur(totalResult):'—'}</div></div><div class="day-profit-card"><div class="label">Journées rentables</div><div class="value">${known.length?`${profitable}/${known.length}`:'—'}</div></div>`;
+  const history=$('dailyProfitHistory');history.classList.toggle('hidden',!entries.length);
+  $('dailyProfitList').innerHTML=entries.length?rows.map(({e,m})=>`<div class="daily-profit-row ${m.cls}"><div><b>${new Date(e.date+'T12:00:00').toLocaleDateString('fr-FR')}</b></div><div><span class="profit-pill ${m.cls}">${m.label}</span><div class="mini muted" style="margin-top:5px">${esc(e.note||'Sans note')}</div></div><div><b>${m.hasProduction?eur(m.production):'—'}</b><div class="mini muted">production HT</div></div><div><b>${eur(m.totalCost)}</b><div class="mini muted">coût journée</div></div><div><b>${m.hasProduction?eur(m.result):'—'}</b><div class="mini muted">résultat</div></div><div class="mini muted">Structure ${eur(m.costs.structure)} • rémunération ${eur(m.costs.remuneration)} • renfort ${eur(m.costs.worker)} • mini-pelle ${eur(m.costs.mini)} • repas ${eur(m.costs.meals)}</div></div>`).join(''):'<div class="muted" style="padding:12px">Aucune journée enregistrée.</div>';
+}
 function renderDailyLog(p,readonly){
   const card=$('dailyEntryCard');if(!card)return;card.classList.toggle('locked',readonly);$('dailyDate').value=$('dailyDate').value||todayIso();
-  ['dailyDate','dailyJimmyHours','dailyEngineMode','dailyMiniShare','dailyRentalAmount','dailyMeals','dailyWorkerHours','dailyNote','saveDailyEntry'].forEach(id=>$(id).disabled=readonly);
+  ['dailyDate','dailyJimmyHours','dailyEngineMode','dailyMiniShare','dailyRentalAmount','dailyMeals','dailyWorkerHours','dailyProductionHT','dailyNote','saveDailyEntry'].forEach(id=>$(id).disabled=readonly);
   const totals=trackingTotals(p);
   $('dailySummary').innerHTML=`<div><b>${nfr(totals.jimmyHours)} h</b><span>Main-d’œuvre Soléo • ${nfr(totals.jimmyHours/8)} j</span></div><div><b>${nfr(totals.workerHours)} h</b><span>Renfort extérieur • ${nfr(totals.workerHours/8)} j</span></div><div><b>${nfr(totals.miniPelleDays)} j</b><span>Mini-pelle personnelle</span></div><div><b>${nfr(totals.meals)}</b><span>Repas saisis</span></div>`;
   const entries=[...(p.actual.dailyEntries||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt).localeCompare(String(a.createdAt)));
   const history=$('dailyHistory');if(history)history.classList.toggle('hidden',!entries.length);
-  $('dailyEntriesList').innerHTML=entries.length?entries.map(e=>`<div class="daily-entry" data-entry-id="${esc(e.id)}"><div><b>${new Date(e.date+'T12:00:00').toLocaleDateString('fr-FR')}</b><span>saisie chantier</span></div><div><b>${nfr(e.jimmyHours)} h</b><span>Soléo</span></div><div><b>${nfr(e.workerHours)} h</b><span>renfort</span></div><div><b>${nfr(e.miniShare)} j</b><span>mini-pelle</span></div><div><b>${nfr(e.meals)}</b><span>repas</span></div><div class="daily-note">${esc(e.note||'—')}</div>${readonly?'':`<div class="daily-actions"><button class="btn edit-daily" type="button">Modifier</button><button class="btn danger delete-daily" type="button">×</button></div>`}</div>`).join(''):'<div class="muted">Aucune saisie pour ce chantier.</div>';
+  $('dailyEntriesList').innerHTML=entries.length?entries.map(e=>`<div class="daily-entry" data-entry-id="${esc(e.id)}"><div><b>${new Date(e.date+'T12:00:00').toLocaleDateString('fr-FR')}</b><span>saisie chantier</span></div><div><b>${nfr(e.jimmyHours)} h</b><span>Soléo</span></div><div><b>${nfr(e.workerHours)} h</b><span>renfort</span></div><div><b>${nfr(e.miniShare)} j</b><span>mini-pelle</span></div><div><b>${nfr(e.meals)}</b><span>repas</span></div><div><b>${Number(e.productionHT)>0?eur(e.productionHT):'—'}</b><span>production HT</span></div><div class="daily-note">${esc(e.note||'—')}</div>${readonly?'':`<div class="daily-actions"><button class="btn edit-daily" type="button">Modifier</button><button class="btn danger delete-daily" type="button">×</button></div>`}</div>`).join(''):'<div class="muted">Aucune saisie pour ce chantier.</div>';
   $('saveDailyEntry').textContent=editingDailyEntryId?'💾 Enregistrer la modification':'💾 Ajouter la saisie';
   let oldBanner=card.querySelector('.editing-banner');if(oldBanner)oldBanner.remove();
   if(editingDailyEntryId&&!readonly){const b=document.createElement('div');b.className='editing-banner';b.innerHTML='Modification d’une saisie existante. <button type="button" class="btn" id="cancelDailyEdit" style="margin-left:8px">Annuler</button>';card.querySelector('.actions').after(b);$('cancelDailyEdit').addEventListener('click',()=>{clearDailyEntryForm();renderActual()})}
@@ -1108,16 +1153,16 @@ function renderDailyLog(p,readonly){
   });
 }
 function clearDailyEntryForm(){
-  editingDailyEntryId=null;$('dailyDate').value=todayIso();$('dailyJimmyHours').value='';$('dailyEngineMode').value='none';$('dailyMiniShare').value='0';$('dailyRentalAmount').value='';$('dailyMeals').value='1';$('dailyWorkerHours').value='';$('dailyNote').value='';
+  editingDailyEntryId=null;$('dailyDate').value=todayIso();$('dailyJimmyHours').value='';$('dailyEngineMode').value='none';$('dailyMiniShare').value='0';$('dailyRentalAmount').value='';$('dailyMeals').value='1';$('dailyWorkerHours').value='';$('dailyProductionHT').value='';$('dailyNote').value='';
 }
 function editDailyLogEntry(p,id){
-  const e=(p.actual.dailyEntries||[]).find(x=>x.id===id);if(!e)return;editingDailyEntryId=id;$('dailyDate').value=e.date||todayIso();$('dailyJimmyHours').value=inputFmt(e.jimmyHours);$('dailyEngineMode').value=(Number(e.miniShare)||0)>0?'soleo':'none';$('dailyMiniShare').value=String(Number(e.miniShare)||0);$('dailyRentalAmount').value='';$('dailyMeals').value=inputFmt(e.meals);$('dailyWorkerHours').value=inputFmt(e.workerHours);$('dailyNote').value=e.note||'';$('dailyHistory').open=true;window.scrollTo({top:$('dailyEntryCard').offsetTop-20,behavior:'smooth'});renderDailyLog(p,false)
+  const e=(p.actual.dailyEntries||[]).find(x=>x.id===id);if(!e)return;editingDailyEntryId=id;$('dailyDate').value=e.date||todayIso();$('dailyJimmyHours').value=inputFmt(e.jimmyHours);$('dailyEngineMode').value=(Number(e.miniShare)||0)>0?'soleo':'none';$('dailyMiniShare').value=String(Number(e.miniShare)||0);$('dailyRentalAmount').value='';$('dailyMeals').value=inputFmt(e.meals);$('dailyWorkerHours').value=inputFmt(e.workerHours);$('dailyProductionHT').value=inputFmt(e.productionHT);$('dailyNote').value=e.note||'';$('dailyHistory').open=true;window.scrollTo({top:$('dailyEntryCard').offsetTop-20,behavior:'smooth'});renderDailyLog(p,false)
 }
 function saveDailyLogEntry(){
   const p=activeProject();if(!p||!p.previsionFrozen||p.status==='completed')return;
-  const engineMode=$('dailyEngineMode').value||'none';const values={date:$('dailyDate').value||todayIso(),jimmyHours:num($('dailyJimmyHours').value),engineMode,miniShare:engineMode==='soleo'?num($('dailyMiniShare').value):0,rentalAmount:0,meals:num($('dailyMeals').value),workerHours:num($('dailyWorkerHours').value),note:$('dailyNote').value.trim()};
-  if(values.jimmyHours<0||values.miniShare<0||values.meals<0||values.workerHours<0){alert('Les valeurs ne peuvent pas être négatives.');return}
-  if(!values.jimmyHours&&!values.miniShare&&!values.meals&&!values.workerHours&&!values.note){alert('Renseigne au moins une information.');return}
+  const engineMode=$('dailyEngineMode').value||'none';const values={date:$('dailyDate').value||todayIso(),jimmyHours:num($('dailyJimmyHours').value),engineMode,miniShare:engineMode==='soleo'?num($('dailyMiniShare').value):0,rentalAmount:0,meals:num($('dailyMeals').value),workerHours:num($('dailyWorkerHours').value),productionHT:num($('dailyProductionHT').value),note:$('dailyNote').value.trim()};
+  if(values.jimmyHours<0||values.miniShare<0||values.meals<0||values.workerHours<0||values.productionHT<0){alert('Les valeurs ne peuvent pas être négatives.');return}
+  if(!values.jimmyHours&&!values.miniShare&&!values.meals&&!values.workerHours&&!values.productionHT&&!values.note){alert('Renseigne au moins une information.');return}
   if(editingDailyEntryId){const e=p.actual.dailyEntries.find(x=>x.id===editingDailyEntryId);if(e)Object.assign(e,values,{updatedAt:new Date().toISOString()})}
   else p.actual.dailyEntries.push({id:uid(),...values,createdAt:new Date().toISOString()});
   if(values.workerHours>0)ensureLinkedWorker(p);syncTrackingIntoActual(p);markActualTouched(p);saveApp();clearDailyEntryForm();renderActual();
@@ -1226,7 +1271,7 @@ function makeSignatureSnapshot(p){
   if(p.prevision.manualSupplyExpenses.length)categories.set('Fournitures manuelles / postes non lus',{sale:0,cost:manualSupplyTotal(p.prevision)});
   const lineCosts=p.lines.map(l=>({no:l.no,description:l.description,categoryId:l.categoryId,estimatedCost:lineMaterialCost(l),saleHT:l.totalHT,costMode:l.costMode||'ratio'}));
   p.prevision.manualSupplyExpenses.forEach((e,i)=>lineCosts.push({no:`M${i+1}`,description:e.label||`Fourniture manuelle ${i+1}`,categoryId:'manual_supply',estimatedCost:Number(e.amount)||0,saleHT:0,costMode:'manual'}));
-  return {engineVersion:'1.0',frozenAt:new Date().toISOString(),prevision:clone(p.prevision),structureDaily,fixedDaily:fixedDailyCharge(),tempDaily:tempDailyCharge(),monthlyStructure:monthlyStructureTotal(),productiveDays:Number(app.finance.productiveDays)||21,remunerationDaily:remunerationDailyCharge(),totals:{ref:totals.ref,estimated:metrics.supplies},metrics:clone(metrics),lineCosts,categories:[...categories].map(([label,v])=>({label,...v}))}
+  return {engineVersion:'1.2',frozenAt:new Date().toISOString(),prevision:clone(p.prevision),structureDaily,fixedDaily:fixedDailyCharge(),tempDaily:tempDailyCharge(),monthlyStructure:monthlyStructureTotal(),productiveDays:Number(app.finance.productiveDays)||21,remunerationDaily:remunerationDailyCharge(),totals:{ref:totals.ref,estimated:metrics.supplies},metrics:clone(metrics),lineCosts,categories:[...categories].map(([label,v])=>({label,...v}))}
 }
 function legacySignatureMetrics(p){
   const snap=p.signatureSnapshot,m=snap?.metrics||{},days=Number(m.days)||projectedDays(snap?.prevision?.timeMode||'day',snap?.prevision?.timeValue||0),ref=Number(snap?.totals?.ref)||0,supplies=Number(snap?.totals?.estimated)||0,directExtra=Number(m.directExtra)||0,marginAfterDirectTotal=ref-supplies-directExtra,legacyCommon=Number(snap?.commonDaily??m.commonDaily)||0,prod=Number(snap?.productiveDays)||Number(app.finance.productiveDays)||21,legacySocialDaily=(Number(app.finance.legacySocialMonthlyRemoved)||1600)/prod,structureDaily=Math.max(0,legacyCommon-legacySocialDaily),structureAllocated=days*structureDaily,afterStructureTotal=marginAfterDirectTotal-structureAllocated,remunerationDaily=remunerationDailyCharge(),remunerationAllocated=days*remunerationDaily,resultBeforeTaxTotal=afterStructureTotal-remunerationAllocated;
@@ -1335,7 +1380,7 @@ function renderActualLines(p,readonly){
   document.querySelectorAll('#actualLinesContainer .actual-line-card').forEach(card=>{const no=card.dataset.no,e=ensureLineCostEntry(p,no);card.querySelector('.add-line-expense')?.addEventListener('click',()=>{e.expenses.push({id:uid(),label:'Nouvelle dépense',amount:0});saveApp();renderActual()});card.querySelector('.real-line-status').addEventListener('change',ev=>{e.status=ev.target.value;saveApp();renderActual()});card.querySelectorAll('[data-expense-index]').forEach(row=>{const i=Number(row.dataset.expenseIndex),x=e.expenses[i];row.querySelector('.le-label').addEventListener('change',ev=>{x.label=ev.target.value;saveApp();renderActual()});row.querySelector('.le-amount').addEventListener('change',ev=>{x.amount=num(ev.target.value);saveApp();renderActual()});row.querySelector('.le-remove').addEventListener('click',()=>{e.expenses.splice(i,1);saveApp();renderActual()})})})
 }
 function renderActual(){
-  const p=activeProject(),actualCards=['trackingModeCard','dailyEntryCard','retrospectiveCard','actualProgressCard','actualCostsCard','actualWorkersCard','lineProgressCard','actualLinesCard'];
+  const p=activeProject(),actualCards=['trackingModeCard','dailyEntryCard','dailyProfitCard','retrospectiveCard','actualProgressCard','actualCostsCard','actualWorkersCard','lineProgressCard','actualLinesCard'];
   if(!p){actualCards.forEach(id=>$(id).classList.add('hidden'));$('actualKpis').innerHTML='';$('actualComparison').innerHTML='<div class="summary-note">Ouvre d’abord un chantier.</div>';$('actualFinishActions').innerHTML='';return}
   if(!p.previsionFrozen){actualCards.forEach(id=>$(id).classList.add('hidden'));$('actualStatus').className='status warn';$('actualStatus').textContent='Prévision à figer';$('actualKpis').innerHTML='';$('actualComparison').innerHTML='<div class="summary-note">Fige d’abord la « Prévision signature ». Le suivi réel doit toujours être comparé à une photo de départ intouchable.</div>';$('actualFinishActions').innerHTML='';return}
   actualCards.forEach(id=>$(id).classList.remove('hidden'));const readonly=p.status==='completed';renderTrackingMode(p,readonly);syncTrackingIntoActual(p);
@@ -1348,17 +1393,17 @@ function renderActual(){
   $('actualProgressBar').style.width=`${m.progress||0}%`;$('actualProgressText').textContent=`${nfr(m.progress||0,1)} % du temps projeté • ${nfr(m.elapsedDays||0)} j réels sur ${nfr(m.days||0)} j retenus`;
   $('actualDerivedCosts').innerHTML=`<div><b>${nfr(m.miniDays)} j</b><span>mini-pelle projetée • ${eur(m.miniCost)}${m.miniDays!==m.observedMiniDays?` • ${nfr(m.observedMiniDays)} j constaté(s)`:''}</span></div><div><b>${nfr(m.mealCount)}</b><span>repas projetés • ${eur(m.mealCost)}${m.mealCount!==m.observedMeals?` • ${nfr(m.observedMeals)} saisi(s)`:''}</span></div><div><b>${eur(m.rental)}</b><span>locations</span></div><div><b>${eur(m.otherDirect)}</b><span>dépenses directes</span></div>`;
   $('actualCostStrip').innerHTML=`<div><b>${eur(m.lineData?.projected||0)}</b><span>coûts postes projetés</span></div><div><b>${eur(m.externalCost)}</b><span>renfort retenu</span></div><div><b>${eur(m.structureAllocated)}</b><span>structure projetée</span></div><div><b>${eur(m.remunerationAllocated)}</b><span>rémunération projetée</span></div>`;
-  renderDailyLog(p,readonly);renderExpenseLists(p,readonly);renderActualWorkers(p,readonly);renderLineProgress(p,readonly);renderActualLines(p,readonly);
+  renderDailyLog(p,readonly);renderDailyProfit(p);renderExpenseLists(p,readonly);renderActualWorkers(p,readonly);renderLineProgress(p,readonly);renderActualLines(p,readonly);
   const deltaTotal=m.resultBeforeTaxTotal-base.resultBeforeTaxTotal,deltaCls=deltaDay>=0?'ok':'bad';
   const comparison=quality.reliable?`<div class="verdict ${deltaCls}" style="margin-top:12px"><div>${deltaDay>=0?'PROJECTION AU-DESSUS DE LA SIGNATURE':'PROJECTION SOUS LA SIGNATURE'}</div><div class="mini" style="margin-top:7px;font-weight:600">Prévu ${eur(base.resultBeforeTaxPerDay)}/j → actualisé ${eur(m.resultBeforeTaxPerDay)}/j avant IS. Écart ${deltaDay>=0?'+':''}${eur(deltaDay)}/j et ${deltaTotal>=0?'+':''}${eur(deltaTotal)} au total.</div></div>`:`<div class="verdict warn" style="margin-top:12px"><div>⚠️ COMPARAISON SIGNATURE NON FIABLE</div><div class="mini" style="margin-top:7px;font-weight:600">${esc(quality.reason)} Le résultat économique actualisé reste calculé, mais le rouge prévu / réel ne doit pas servir à juger ce chantier.</div></div>`;
-  $('actualComparison').innerHTML=`<div class="stage-kpis"><div class="kpi"><div class="name">Marge après coûts directs</div><div class="value">${eur(m.marginAfterDirectTotal)}</div><div class="note">${eur(m.marginAfterDirectPerDay)}/j</div></div><div class="kpi"><div class="name">Après structure Soléo</div><div class="value">${eur(m.afterStructureTotal)}</div><div class="note">${eur(m.afterStructurePerDay)}/j</div></div><div class="kpi"><div class="name">Résultat avant IS</div><div class="value">${eur(m.resultBeforeTaxTotal)}</div><div class="note">${eur(m.resultBeforeTaxPerDay)}/j</div></div></div>${comparison}<div class="summary-note" style="margin-top:12px"><strong>Lecture V1.0 :</strong> le journal ou la saisie rétrospective est la source du réel. Tant que le chantier n’est pas terminé, la projection garde par prudence au moins les quantités prévues de mini-pelle, repas et renfort, puis augmente si le réel les dépasse.</div>`;
+  $('actualComparison').innerHTML=`<div class="stage-kpis"><div class="kpi"><div class="name">Marge après coûts directs</div><div class="value">${eur(m.marginAfterDirectTotal)}</div><div class="note">${eur(m.marginAfterDirectPerDay)}/j</div></div><div class="kpi"><div class="name">Après structure Soléo</div><div class="value">${eur(m.afterStructureTotal)}</div><div class="note">${eur(m.afterStructurePerDay)}/j</div></div><div class="kpi"><div class="name">Résultat avant IS</div><div class="value">${eur(m.resultBeforeTaxTotal)}</div><div class="note">${eur(m.resultBeforeTaxPerDay)}/j</div></div></div>${comparison}<div class="summary-note" style="margin-top:12px"><strong>Lecture V1.2 :</strong> le journal ou la saisie rétrospective est la source du réel. Tant que le chantier n’est pas terminé, la projection garde par prudence au moins les quantités prévues de mini-pelle, repas et renfort, puis augmente si le réel les dépasse.</div>`;
   const frozenAt=a.finalSnapshot?.frozenAt;$('actualFinishActions').innerHTML=readonly?`<div class="summary-ok">🔒 Bilan final figé${frozenAt?` le ${new Date(frozenAt).toLocaleString('fr-FR')}`:''}.</div>`:'<button class="btn primary" id="finishProjectBtn">✅ Marquer le chantier terminé et figer le bilan réel</button>';$('finishProjectBtn')?.addEventListener('click',()=>finishProject(p,m));
 }
 function finishProject(p,m){
   const finalMetrics=actualProjectionMetrics(p,true);
   if(finalMetrics.lineData.incomplete&&!confirm(`${finalMetrics.lineData.incomplete} coût(s) de poste restent à compléter. Terminer quand même le chantier ?`))return;
   if(!confirm('Figer définitivement le bilan réel de ce chantier ?'))return;
-  p.actual.finalSnapshot={engineVersion:'1.0',frozenAt:new Date().toISOString(),metrics:clone(finalMetrics),actual:clone(p.actual)};p.status='completed';saveApp();renderAll();renderActual()
+  p.actual.finalSnapshot={engineVersion:'1.2',frozenAt:new Date().toISOString(),metrics:clone(finalMetrics),actual:clone(p.actual)};p.status='completed';saveApp();renderAll();renderActual()
 }
 function renderCharges(){
   ensureFinance();$('productiveDays').value=inputFmt(app.finance.productiveDays||21);$('commonMileageMonthly').value=inputFmt(app.finance.commonMileageMonthly);$('remunerationMonthlyCost').value=inputFmt(app.finance.remunerationMonthlyCost);$('monthlyChargesTotal').textContent=eur(monthlyStructureTotal());$('fixedDailyTotal').textContent=`${eur(fixedDailyCharge())}/j`;$('remunerationDailyCost').textContent=`${eur(remunerationDailyCharge())}/j`;
@@ -1425,7 +1470,7 @@ $('addFixedCharge').addEventListener('click',()=>{app.finance.fixedCharges.push(
 $('addTemporaryCharge').addEventListener('click',()=>{app.finance.temporaryCharges.push({id:uid(),name:'Produits / consommables',amount:0,mode:'net',months:3,active:true});saveApp();renderCharges();renderForecast();renderActual()});
 
 const fileInput=$('pdfFile'),drop=$('dropZone');fileInput.addEventListener('change',e=>{const f=e.target.files?.[0];if(f)parsePdf(f)});['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));drop.addEventListener('drop',e=>{const f=e.dataTransfer.files?.[0];if(f&&f.type==='application/pdf')parsePdf(f);else alert('Choisis un fichier PDF.')});
-$('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(app,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='soleo-rentabilite-lab-v11-sauvegarde-'+todayIso()+'.json';a.click();URL.revokeObjectURL(a.href)});
+$('exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(app,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='soleo-rentabilite-lab-v12-sauvegarde-'+todayIso()+'.json';a.click();URL.revokeObjectURL(a.href)});
 $('importBackupBtn').addEventListener('click',()=>$('importBackupInput').click());
 $('importBackupInput').addEventListener('change',e=>{
   const file=e.target.files?.[0];
@@ -1449,7 +1494,7 @@ $('importBackupInput').addEventListener('change',e=>{
       app={...defaultApp(),...imported};
       app.projects=Array.isArray(app.projects)?app.projects.map(ensureProject):[];
       ensureFinance();
-      app.version='1.1';
+      app.version='1.2';
       if(app.activeProjectId&&!app.projects.some(p=>p.id===app.activeProjectId))app.activeProjectId=app.projects[0]?.id||null;
       saveLocalOnly();
       markCloudDirty();
