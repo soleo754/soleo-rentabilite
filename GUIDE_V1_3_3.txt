@@ -1,0 +1,12 @@
+SOLÉO RENTABILITÉ LAB V1.3.3 — CORRECTIFS FORMULAIRES
+
+Correctifs immédiats :
+- « Ajouter un renfort réel » ouvre désormais un formulaire avant tout enregistrement.
+- Choix du jour, de l'heure ou du forfait, de la quantité, du tarif et de la facture réelle éventuelle.
+- Aucun jour de renfort n'est ajouté automatiquement par ce bouton.
+- « Ajouter une location » ouvre désormais un formulaire avec libellé et montant.
+- Une location n'est intégrée aux calculs qu'après validation d'un montant supérieur à 0 €.
+- Les locations déjà présentes restent modifiables et enregistrables.
+
+Déploiement : remplace index.html et _headers, puis force l’actualisation avec Ctrl+F5.
+Avant toute mise à jour, conserve toujours un export JSON récent.

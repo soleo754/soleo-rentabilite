@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Soléo Pilot — Rentabilité LAB V1.3.1 Correctif renfort</title>
+  <title>Soléo Pilot — Rentabilité LAB V1.3.3 Correctifs formulaires</title>
   <style>
     :root{
       --bg:#101417;--panel:#171d21;--panel2:#1f282e;--text:#f3f5f7;--muted:#aeb8c2;
@@ -129,6 +129,13 @@
       header{position:static;transform:none!important}body.mobile-header-hidden .mobile-project-chip{display:block}
     }
 
+
+    .entry-modal{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.68);display:none;align-items:flex-end;justify-content:center;padding:16px}
+    .entry-modal.open{display:flex}
+    .entry-modal-card{width:min(620px,100%);max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:var(--shadow)}
+    .entry-modal-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
+    .entry-modal-close{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:20px}
+    @media(min-width:721px){.entry-modal{align-items:center}}
     .day-profit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
     .day-profit-card{border:1px solid var(--line);background:var(--panel2);border-radius:14px;padding:12px}
     .day-profit-card .value{font-size:21px;font-weight:900;margin-top:4px}.day-profit-card .label{font-size:11px;color:var(--muted);font-weight:800}
@@ -148,7 +155,7 @@
 <header>
   <div class="top">
     <div class="brand"><div class="logo">SP</div><div><h1>Soléo Pilot — Rentabilité</h1><div class="sub">Multi-chantiers + lecteur PDF renforcé + suivi réel + moteur rentabilité réelle + suivi terrain — prototype séparé du Pilot Terrain</div></div></div>
-    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.3.1 Correctif renfort</div></div>
+    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.3.3 Correctifs formulaires</div></div>
   </div>
   <nav>
     <button data-view="projects" class="active">Chantiers</button>
@@ -164,6 +171,15 @@
 </header>
 <button id="mobileProjectChip" class="mobile-project-chip" type="button">Chantier</button>
 <div id="toast" class="toast"></div>
+<div id="entryModal" class="entry-modal" aria-hidden="true">
+  <div class="entry-modal-card" role="dialog" aria-modal="true" aria-labelledby="entryModalTitle">
+    <div class="entry-modal-head"><h3 id="entryModalTitle">Nouvelle saisie</h3><button id="entryModalClose" class="entry-modal-close" type="button">×</button></div>
+    <div id="entryModalHelp" class="muted mini"></div>
+    <div id="entryModalFields" class="grid grid2" style="margin-top:12px"></div>
+    <div class="actions"><button id="entryModalCancel" class="btn" type="button">Annuler</button><button id="entryModalSave" class="btn primary" type="button">Enregistrer</button></div>
+  </div>
+</div>
+
 
 <main>
   <section id="projects" class="view active">
@@ -529,6 +545,57 @@ const sum=(list,fn=x=>Number(x)||0)=>(list||[]).reduce((s,x)=>s+(Number(fn(x))||
 let toastTimer=null;
 function showToast(message,kind='ok'){const el=$('toast');if(!el)return;el.textContent=message;el.className=`toast ${kind==='bad'?'bad':''} show`;clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600)}
 function syncTimeLabel(iso){if(!iso)return '';try{return new Date(iso).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}catch{return ''}}
+
+let entryModalMode=null;
+function closeEntryModal(){
+  entryModalMode=null;
+  $('entryModal').classList.remove('open');
+  $('entryModal').setAttribute('aria-hidden','true');
+  $('entryModalFields').innerHTML='';
+}
+function openRentalModal(){
+  entryModalMode='rental';
+  $('entryModalTitle').textContent='Ajouter une location / un engin';
+  $('entryModalHelp').textContent='Renseigne le libellé et le montant réel. La location ne sera ajoutée qu’après validation.';
+  $('entryModalFields').innerHTML=`<div><label>Location / engin</label><input id="modalRentalLabel" value="Location mini-pelle" autocomplete="off"></div><div><label>Montant HT / coût net (€)</label><input id="modalRentalAmount" inputmode="decimal" placeholder="Ex : 1 250"></div>`;
+  $('entryModal').classList.add('open');$('entryModal').setAttribute('aria-hidden','false');
+  setTimeout(()=>$('modalRentalAmount')?.focus(),30);
+}
+function openWorkerModal(){
+  entryModalMode='worker';
+  $('entryModalTitle').textContent='Ajouter un renfort réel';
+  $('entryModalHelp').textContent='Choisis l’unité, la quantité et le tarif. Rien ne sera ajouté automatiquement.';
+  $('entryModalFields').innerHTML=`<div><label>Intervenant / entreprise</label><input id="modalWorkerName" value="Renfort / sous-traitant" autocomplete="off"></div><div><label>Facturation</label><select id="modalWorkerUnit">${workerUnitOptions('day')}</select></div><div><label>Quantité</label><input id="modalWorkerQty" inputmode="decimal" placeholder="Ex : 0,5 ou 4"></div><div><label>Coût unitaire (€)</label><input id="modalWorkerCost" inputmode="decimal" value="200"></div><div><label>Facture réelle finale (€)</label><input id="modalWorkerInvoice" inputmode="decimal" placeholder="Facultatif"></div>`;
+  $('entryModal').classList.add('open');$('entryModal').setAttribute('aria-hidden','false');
+  setTimeout(()=>$('modalWorkerQty')?.focus(),30);
+}
+function saveEntryModal(){
+  const p=activeProject();
+  if(!p||p.status==='completed'){closeEntryModal();return}
+  if(entryModalMode==='rental'){
+    const label=$('modalRentalLabel')?.value.trim()||'Location / engin';
+    const amount=num($('modalRentalAmount')?.value);
+    if(!(amount>0)){showToast('Renseigne un montant supérieur à 0 €.','bad');$('modalRentalAmount')?.focus();return}
+    p.actual.rentalExpenses=p.actual.rentalExpenses||[];
+    p.actual.rentalExpenses.push({id:uid(),label,amount});
+    markActualTouched(p);saveApp();closeEntryModal();renderActual();showToast(`Location enregistrée : ${eur(amount)}`);return;
+  }
+  if(entryModalMode==='worker'){
+    const name=$('modalWorkerName')?.value.trim()||'Renfort / sous-traitant';
+    const unit=$('modalWorkerUnit')?.value||'day';
+    let qty=num($('modalWorkerQty')?.value);
+    const unitCost=num($('modalWorkerCost')?.value);
+    const invoiceAmount=num($('modalWorkerInvoice')?.value);
+    if(unit==='fixed'&&!(qty>0))qty=1;
+    if(!(qty>0)){showToast('Renseigne une quantité supérieure à 0.','bad');$('modalWorkerQty')?.focus();return}
+    if(!(unitCost>0)&&!(invoiceAmount>0)){showToast('Renseigne un tarif ou une facture réelle.','bad');$('modalWorkerCost')?.focus();return}
+    p.actual.externalWorkers=p.actual.externalWorkers||[];
+    p.actual.externalWorkers.push({id:uid(),name,unit,qty,unitCost,mode:'no_vat',journalLinked:false,invoiceAmount});
+    markActualTouched(p);saveApp();closeEntryModal();renderActual();
+    setTimeout(()=>{const d=document.querySelector('#actualWorkersList details');if(d)d.open=true},0);
+    showToast(`Renfort enregistré : ${nfr(qty)} ${WORKER_UNITS[unit]}(s)`);
+  }
+}
 
 
 const CATEGORIES=[
@@ -1391,10 +1458,10 @@ function renderActualWorkers(p,readonly){
 }
 function renderExpenseLists(p,readonly){
   const a=p.actual;
-  $('actualRentalList').innerHTML=a.rentalExpenses.length?a.rentalExpenses.map((e,i)=>`<div class="line-expense-row" data-rental="${i}"><div><label>Location / engin</label><input class="rent-label" value="${esc(e.label||'')}" ${readonly?'disabled':''}></div><div><label>Montant HT / coût net</label><input class="rent-amount" inputmode="decimal" value="${inputFmt(e.amount)}" ${readonly?'disabled':''}></div>${readonly?'':'<button class="btn danger rent-remove" type="button">×</button>'}</div>`).join(''):'<div class="muted">Aucune location saisie.</div>';
+  $('actualRentalList').innerHTML=a.rentalExpenses.length?a.rentalExpenses.map((e,i)=>`<div class="line-expense-row" data-rental="${i}"><div><label>Location / engin</label><input class="rent-label" value="${esc(e.label||'')}" ${readonly?'disabled':''}></div><div><label>Montant HT / coût net</label><input class="rent-amount" inputmode="decimal" value="${inputFmt(e.amount)}" ${readonly?'disabled':''}></div>${readonly?'':`<button class="btn primary rent-save" type="button">✓ Enregistrer</button><button class="btn danger rent-remove" type="button">×</button>`}</div>`).join(''):'<div class="muted">Aucune location saisie.</div>';
   $('actualDirectExpensesList').innerHTML=a.directExpenses.length?a.directExpenses.map((e,i)=>`<div class="expense-row" data-expense="${i}"><div><label>Type</label><select class="de-type" ${readonly?'disabled':''}>${expenseTypeOptions(e.type||'other')}</select></div><div><label>Libellé</label><input class="de-label" value="${esc(e.label||'')}" ${readonly?'disabled':''}></div><div><label>Montant HT / coût net</label><input class="de-amount" inputmode="decimal" value="${inputFmt(e.amount)}" ${readonly?'disabled':''}></div><div><label>Part chantier (%)</label><input class="de-pct" inputmode="decimal" value="${inputFmt(e.type==='reusable'?(e.allocationPct??50):100)}" ${readonly||e.type!=='reusable'?'disabled':''}></div><div><label>Coût imputé</label><div class="expense-retained">${eur(expenseRetained(e))}</div></div>${readonly?'':'<button class="btn danger de-remove" type="button">×</button>'}</div>`).join(''):'<div class="muted">Aucune dépense directe hors lignes du devis.</div>';
   if(readonly)return;
-  document.querySelectorAll('[data-rental]').forEach(row=>{const i=Number(row.dataset.rental),e=a.rentalExpenses[i];row.querySelector('.rent-label').addEventListener('change',ev=>{e.label=ev.target.value;saveApp();renderActual()});row.querySelector('.rent-amount').addEventListener('change',ev=>{e.amount=num(ev.target.value);saveApp();renderActual()});row.querySelector('.rent-remove').addEventListener('click',()=>{a.rentalExpenses.splice(i,1);saveApp();renderActual()})});
+  document.querySelectorAll('[data-rental]').forEach(row=>{const i=Number(row.dataset.rental),e=a.rentalExpenses[i];const persistRental=()=>{e.label=row.querySelector('.rent-label').value.trim()||'Location / engin';e.amount=num(row.querySelector('.rent-amount').value);markActualTouched(p);saveApp()};row.querySelector('.rent-label').addEventListener('input',persistRental);row.querySelector('.rent-amount').addEventListener('input',persistRental);row.querySelector('.rent-save')?.addEventListener('click',()=>{persistRental();renderActual();showToast(`Location enregistrée : ${eur(e.amount)}`)});row.querySelector('.rent-remove').addEventListener('click',()=>{a.rentalExpenses.splice(i,1);saveApp();renderActual()})});
   document.querySelectorAll('[data-expense]').forEach(row=>{const i=Number(row.dataset.expense),e=a.directExpenses[i];row.querySelector('.de-type').addEventListener('change',ev=>{e.type=ev.target.value;if(e.type==='reusable'&&e.allocationPct===undefined)e.allocationPct=50;saveApp();renderActual()});row.querySelector('.de-label').addEventListener('change',ev=>{e.label=ev.target.value;saveApp();renderActual()});row.querySelector('.de-amount').addEventListener('change',ev=>{e.amount=num(ev.target.value);saveApp();renderActual()});row.querySelector('.de-pct').addEventListener('change',ev=>{e.allocationPct=Math.min(100,Math.max(0,num(ev.target.value)));saveApp();renderActual()});row.querySelector('.de-remove').addEventListener('click',()=>{a.directExpenses.splice(i,1);saveApp();renderActual()})});
 }
 function renderActualLines(p,readonly){
@@ -1469,9 +1536,14 @@ $('mobileProjectChip').addEventListener('click',()=>{document.body.classList.rem
 $('validateSelectedLinesBtn').addEventListener('click',()=>{const p=activeProject();if(p&&p.status!=='completed')validateSelectedLines(p)});$('dailyEngineMode').addEventListener('change',()=>{const m=$('dailyEngineMode').value;$('dailyMiniShareWrap').classList.toggle('hidden',m!=='soleo');$('dailyRentalAmountWrap').classList.toggle('hidden',m!=='rental');if(m!=='soleo')$('dailyMiniShare').value='0';if(m!=='rental')$('dailyRentalAmount').value=''});$('trackingModeChoice').addEventListener('click',e=>{const b=e.target.closest('[data-mode]'),p=activeProject();if(!b||!p||p.status==='completed')return;p.actual.trackingMode=b.dataset.mode;syncTrackingIntoActual(p);markActualTouched(p);saveApp();renderActual()});
 ['retroJimmyHours','retroMiniDays','retroMeals','retroWorkerHours'].forEach(id=>$(id).addEventListener('change',e=>{const p=activeProject();if(!p||p.status==='completed')return;const map={retroJimmyHours:'jimmyHours',retroMiniDays:'miniPelleDays',retroMeals:'meals',retroWorkerHours:'workerHours'};p.actual.retrospective[map[id]]=num(e.target.value);if(id==='retroWorkerHours'&&num(e.target.value)>0)ensureLinkedWorker(p);syncTrackingIntoActual(p);markActualTouched(p);saveApp();renderActual()}));
 $('addManualSupply').addEventListener('click',()=>{const p=activeProject();if(!p||p.previsionFrozen)return;p.prevision.manualSupplyExpenses.push({id:uid(),label:'Fourniture / poste non lu',amount:0});saveApp();renderForecast()});
-$('addActualRental').addEventListener('click',()=>{const p=activeProject();if(!p||p.status==='completed')return;p.actual.rentalExpenses.push({id:uid(),label:'Nouvelle location',amount:0});markActualTouched(p);saveApp();renderActual()});
+$('addActualRental').addEventListener('click',openRentalModal);
 $('addActualDirectExpense').addEventListener('click',()=>{const p=activeProject();if(!p||p.status==='completed')return;p.actual.directExpenses.push({id:uid(),type:'other',label:'Nouvelle dépense directe',amount:0,allocationPct:100});markActualTouched(p);saveApp();renderActual()});
 
+$('entryModalClose').addEventListener('click',closeEntryModal);
+$('entryModalCancel').addEventListener('click',closeEntryModal);
+$('entryModalSave').addEventListener('click',saveEntryModal);
+$('entryModal').addEventListener('click',e=>{if(e.target===$('entryModal'))closeEntryModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('entryModal').classList.contains('open'))closeEntryModal()});
 $('importCloudConfigBtn').addEventListener('click',importCloudConfigFromPastedLink);
 $('saveCloudConfig').addEventListener('click',async()=>{
   const cfg={url:$('supabaseUrl').value.trim().replace(/\/$/,''),key:$('supabaseKey').value.trim()};
@@ -1502,7 +1574,7 @@ $('deleteCloudBtn').addEventListener('click',deleteCloud);
 $('backProjects').addEventListener('click',()=>switchView('projects'));
 $('validateAnalysis').addEventListener('click',()=>{const p=activeProject();if(!p||p.previsionFrozen)return;const t=quoteTotals(p);if(t.unknown.length&&!confirm(`${t.unknown.length} ligne(s) restent non reconnues. Valider quand même ?`))return;p.validated=true;saveApp();renderForecast();switchView('prevision')});
 $('addExternalWorker').addEventListener('click',()=>{const p=activeProject();if(!p||p.previsionFrozen)return;p.prevision.externalWorkers.push({id:uid(),name:'Auto-entrepreneur / renfort',unit:'day',qty:0,unitCost:200,mode:'no_vat'});saveApp();renderForecast()});
-$('addActualWorker').addEventListener('click',()=>{const p=activeProject();if(!p||p.status==='completed')return;p.actual.externalWorkers.push({id:uid(),name:'Renfort / sous-traitant',unit:'day',qty:0,unitCost:200,mode:'no_vat',journalLinked:false,invoiceAmount:0});markActualTouched(p);saveApp();renderActual()});
+$('addActualWorker').addEventListener('click',openWorkerModal);
 
 ['plannedTimeValue','miniPelleDays','miniPelleDaily','plannedMeals','mealCost','jobRental','jobOtherDirect'].forEach(id=>$(id).addEventListener('input',e=>{const p=activeProject();if(!p||p.previsionFrozen)return;const pv=p.prevision;if(id==='plannedTimeValue'){pv.timeMode='day';pv.timeValue=num(e.target.value);if(pv.mealAuto)pv.mealCount=Math.ceil(pv.timeValue)}else if(id==='plannedMeals'){pv.mealCount=num(e.target.value);pv.mealAuto=false}else{const map={miniPelleDays:'miniPelleDays',miniPelleDaily:'miniPelleDaily',mealCost:'mealCost',jobRental:'jobRental',jobOtherDirect:'jobOtherDirect'};pv[map[id]]=num(e.target.value)}saveApp();renderForecast()}));
 ['actualTimeMode','actualTimeValue'].forEach(id=>$(id).addEventListener('input',e=>{const p=activeProject();if(!p||!p.previsionFrozen||p.status==='completed')return;const a=p.actual;if(id==='actualTimeMode')a.timeMode=e.target.value;else a.timeValue=num(e.target.value);markActualTouched(p);saveApp();renderActual()}));
