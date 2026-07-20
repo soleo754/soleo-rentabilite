@@ -482,6 +482,7 @@
       </div>
       <div class="actions">
         <button class="btn primary" id="cloudSignIn">Se connecter</button>
+        <button class="btn" id="cloudForgotPassword">Mot de passe oublié</button>
         <button class="btn" id="cloudSignUp">Créer le compte</button>
         <button class="btn" id="cloudSignOut">Se déconnecter</button>
       </div>
@@ -895,6 +896,40 @@ async function refreshCloudSession(){
   renderSync();renderSyncChip();
   return cloudSession;
 }
+
+async function requestCloudPasswordReset(){
+  if(!supabase&&!initSupabase())return;
+  const email=$('cloudEmail').value.trim();
+  if(!email){setSyncStatus('Renseigne d’abord l’adresse email du compte Soléo.','warn');return}
+  const redirectTo=location.origin+location.pathname;
+  cloudBusy=true;renderSyncChip();
+  const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo});
+  cloudBusy=false;
+  if(error){setSyncStatus(`Envoi du lien impossible : ${error.message}`,'bad');return}
+  setSyncStatus(`Email de réinitialisation envoyé à ${email}. Ouvre le lien sur cet appareil.`,'ok');
+}
+
+let passwordRecoveryHandled=false;
+async function completeCloudPasswordRecovery(){
+  if(passwordRecoveryHandled||!supabase)return;
+  passwordRecoveryHandled=true;
+  let password=prompt('Nouveau mot de passe Soléo (6 caractères minimum) :','');
+  if(password===null){passwordRecoveryHandled=false;setSyncStatus('Réinitialisation annulée. Tu peux rouvrir le lien reçu par email.','warn');return}
+  if(password.length<6){passwordRecoveryHandled=false;alert('Le mot de passe doit contenir au moins 6 caractères.');return completeCloudPasswordRecovery()}
+  const confirmation=prompt('Confirme le nouveau mot de passe :','');
+  if(confirmation!==password){passwordRecoveryHandled=false;alert('Les deux mots de passe ne correspondent pas.');return completeCloudPasswordRecovery()}
+  cloudBusy=true;renderSyncChip();
+  const {error}=await supabase.auth.updateUser({password});
+  cloudBusy=false;
+  if(error){passwordRecoveryHandled=false;setSyncStatus(`Modification du mot de passe impossible : ${error.message}`,'bad');return}
+  history.replaceState(null,'',location.pathname+location.search);
+  await supabase.auth.signOut();
+  cloudSession=null;cloudReady=false;
+  $('cloudPassword').value='';
+  setSyncStatus('Mot de passe Soléo modifié. Saisis-le maintenant puis clique sur « Se connecter ».','ok');
+  renderSync();
+}
+
 async function signInCloud(){
   if(!supabase&&!initSupabase())return;
   const email=$('cloudEmail').value.trim(),password=$('cloudPassword').value;
@@ -1119,15 +1154,19 @@ function renderSync(){
   renderSyncChip();
 }
 async function initCloud(){
+  const hashBeforeInit=location.hash;
+  const recoveryInUrl=hashBeforeInit.includes('type=recovery')||hashBeforeInit.includes('access_token=');
   const imported=importCloudConfigFromHash();
   if(initSupabase()){
-    await refreshCloudSession();
-    supabase.auth.onAuthStateChange((_event,session)=>{
+    supabase.auth.onAuthStateChange(async(event,session)=>{
       cloudSession=session||null;
       const meta=loadCloudMeta();cloudReady=!!(cloudSession&&meta.ready);
       renderSync();renderSyncChip();
+      if(event==='PASSWORD_RECOVERY')await completeCloudPasswordRecovery();
     });
-    if(cloudSession)await inspectCloudAfterLogin();
+    await refreshCloudSession();
+    if(recoveryInUrl&&cloudSession)await completeCloudPasswordRecovery();
+    else if(cloudSession)await inspectCloudAfterLogin();
   }
   if(imported)setSyncStatus('Configuration cloud importée depuis le lien. Connecte le même compte Soléo que sur le PC.','ok');
   renderSync();
@@ -1566,6 +1605,7 @@ $('copyCloudLink').addEventListener('click',async()=>{
   catch{prompt('Copie ce lien et ouvre-le sur l’iPhone :',link)}
 });
 $('cloudSignIn').addEventListener('click',signInCloud);
+$('cloudForgotPassword').addEventListener('click',requestCloudPasswordReset);
 $('cloudSignUp').addEventListener('click',signUpCloud);
 $('cloudSignOut').addEventListener('click',signOutCloud);
 $('pushCloudBtn').addEventListener('click',forcePushCloud);
