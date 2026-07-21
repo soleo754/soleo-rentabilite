@@ -1,0 +1,13 @@
+SOLÉO RENTABILITÉ LAB V1.3.4 — CORRECTIF CALCUL HORAIRE
+
+Correction prioritaire :
+- en suivi réel, la structure Soléo et la rémunération Jimmy sont désormais calculées au prorata exact des heures saisies ;
+- 4 heures correspondent à 0,5 jour économique, et non à 1 journée entière ;
+- le résultat avant IS et le résultat par jour utilisent le même temps exact ;
+- le correctif recalcule aussi les anciens chantiers déjà terminés à leur réouverture.
+
+Cas de contrôle : devis 400 € HT, 4 h Jimmy, 4 h renfort, 1 repas, 0 mini-pelle.
+Résultat attendu avec les paramètres constatés : environ 138,77 € avant IS, et non -12,46 €.
+
+Déploiement : remplace index.html et _headers, puis force l’actualisation avec Ctrl+F5.
+Avant la mise à jour, conserve un export JSON récent.

@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Soléo Pilot — Rentabilité LAB V1.3.3 Correctifs formulaires</title>
+  <title>Soléo Pilot — Rentabilité LAB V1.3.4 Correctif calcul horaire</title>
   <style>
     :root{
       --bg:#101417;--panel:#171d21;--panel2:#1f282e;--text:#f3f5f7;--muted:#aeb8c2;
@@ -155,7 +155,7 @@
 <header>
   <div class="top">
     <div class="brand"><div class="logo">SP</div><div><h1>Soléo Pilot — Rentabilité</h1><div class="sub">Multi-chantiers + lecteur PDF renforcé + suivi réel + moteur rentabilité réelle + suivi terrain — prototype séparé du Pilot Terrain</div></div></div>
-    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.3.3 Correctifs formulaires</div></div>
+    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.3.4 Correctif calcul horaire</div></div>
   </div>
   <nav>
     <button data-view="projects" class="active">Chantiers</button>
@@ -482,7 +482,6 @@
       </div>
       <div class="actions">
         <button class="btn primary" id="cloudSignIn">Se connecter</button>
-        <button class="btn" id="cloudForgotPassword">Mot de passe oublié</button>
         <button class="btn" id="cloudSignUp">Créer le compte</button>
         <button class="btn" id="cloudSignOut">Se déconnecter</button>
       </div>
@@ -896,40 +895,6 @@ async function refreshCloudSession(){
   renderSync();renderSyncChip();
   return cloudSession;
 }
-
-async function requestCloudPasswordReset(){
-  if(!supabase&&!initSupabase())return;
-  const email=$('cloudEmail').value.trim();
-  if(!email){setSyncStatus('Renseigne d’abord l’adresse email du compte Soléo.','warn');return}
-  const redirectTo=location.origin+location.pathname;
-  cloudBusy=true;renderSyncChip();
-  const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo});
-  cloudBusy=false;
-  if(error){setSyncStatus(`Envoi du lien impossible : ${error.message}`,'bad');return}
-  setSyncStatus(`Email de réinitialisation envoyé à ${email}. Ouvre le lien sur cet appareil.`,'ok');
-}
-
-let passwordRecoveryHandled=false;
-async function completeCloudPasswordRecovery(){
-  if(passwordRecoveryHandled||!supabase)return;
-  passwordRecoveryHandled=true;
-  let password=prompt('Nouveau mot de passe Soléo (6 caractères minimum) :','');
-  if(password===null){passwordRecoveryHandled=false;setSyncStatus('Réinitialisation annulée. Tu peux rouvrir le lien reçu par email.','warn');return}
-  if(password.length<6){passwordRecoveryHandled=false;alert('Le mot de passe doit contenir au moins 6 caractères.');return completeCloudPasswordRecovery()}
-  const confirmation=prompt('Confirme le nouveau mot de passe :','');
-  if(confirmation!==password){passwordRecoveryHandled=false;alert('Les deux mots de passe ne correspondent pas.');return completeCloudPasswordRecovery()}
-  cloudBusy=true;renderSyncChip();
-  const {error}=await supabase.auth.updateUser({password});
-  cloudBusy=false;
-  if(error){passwordRecoveryHandled=false;setSyncStatus(`Modification du mot de passe impossible : ${error.message}`,'bad');return}
-  history.replaceState(null,'',location.pathname+location.search);
-  await supabase.auth.signOut();
-  cloudSession=null;cloudReady=false;
-  $('cloudPassword').value='';
-  setSyncStatus('Mot de passe Soléo modifié. Saisis-le maintenant puis clique sur « Se connecter ».','ok');
-  renderSync();
-}
-
 async function signInCloud(){
   if(!supabase&&!initSupabase())return;
   const email=$('cloudEmail').value.trim(),password=$('cloudPassword').value;
@@ -1154,19 +1119,15 @@ function renderSync(){
   renderSyncChip();
 }
 async function initCloud(){
-  const hashBeforeInit=location.hash;
-  const recoveryInUrl=hashBeforeInit.includes('type=recovery')||hashBeforeInit.includes('access_token=');
   const imported=importCloudConfigFromHash();
   if(initSupabase()){
-    supabase.auth.onAuthStateChange(async(event,session)=>{
+    await refreshCloudSession();
+    supabase.auth.onAuthStateChange((_event,session)=>{
       cloudSession=session||null;
       const meta=loadCloudMeta();cloudReady=!!(cloudSession&&meta.ready);
       renderSync();renderSyncChip();
-      if(event==='PASSWORD_RECOVERY')await completeCloudPasswordRecovery();
     });
-    await refreshCloudSession();
-    if(recoveryInUrl&&cloudSession)await completeCloudPasswordRecovery();
-    else if(cloudSession)await inspectCloudAfterLogin();
+    if(cloudSession)await inspectCloudAfterLogin();
   }
   if(imported)setSyncStatus('Configuration cloud importée depuis le lien. Connecte le même compte Soléo que sur le PC.','ok');
   renderSync();
@@ -1422,8 +1383,11 @@ function actualProjectionMetrics(p,finalMode=false){
   let miniBaseline=plannedMini;if(baseDays>0&&days>0&&plannedMini>=baseDays*.9)miniBaseline=Math.max(plannedMini,days);
   const miniDays=exact?tracking.miniPelleDays:Math.max(tracking.miniPelleDays,miniBaseline),miniCost=miniDays*(Number(snap.prevision.miniPelleDaily)||40);
   const mealBaseline=snap.prevision.mealAuto!==false?days:(Number(snap.prevision.mealCount)||0),mealCount=exact?tracking.meals:Math.max(tracking.meals,mealBaseline),mealCost=mealCount*(Number(a.mealCost)||0);
-  const rental=rentalExpensesTotal(a),otherDirect=directExpensesTotal(a),externalCost=actualWorkersTotal(p,finalMode),directExtra=miniCost+mealCost+rental+otherDirect+externalCost,directCosts=lineData.projected+directExtra,marginAfterDirectTotal=snap.totals.ref-directCosts,marginAfterDirectPerDay=days?marginAfterDirectTotal/days:0,structureDaily=allCommonDailyCharge(),structureAllocated=days*structureDaily,afterStructureTotal=marginAfterDirectTotal-structureAllocated,afterStructurePerDay=days?afterStructureTotal/days:0,remunerationDaily=remunerationDailyCharge(),remunerationAllocated=days*remunerationDaily,resultBeforeTaxTotal=afterStructureTotal-remunerationAllocated,resultBeforeTaxPerDay=days?resultBeforeTaxTotal/days:0,progress=days?Math.min(100,elapsedDays/days*100):0;
-  return {days,exactProjectedDays,elapsedDays,progress,observedMiniDays:tracking.miniPelleDays,miniDays,miniCost,observedMeals:tracking.meals,mealCount,mealCost,rental,otherDirect,externalCost,directExtra,directCosts,marginAfterDirectTotal,marginAfterDirectPerDay,structureDaily,structureAllocated,afterStructureTotal,afterStructurePerDay,remunerationDaily,remunerationAllocated,resultBeforeTaxTotal,resultBeforeTaxPerDay,beforeSalaryTotal:afterStructureTotal,beforeSalaryPerDay:afterStructurePerDay,afterSalaryTotal:resultBeforeTaxTotal,afterSalaryPerDay:resultBeforeTaxPerDay,lineData}
+  // Les coûts de structure et de rémunération suivent le temps exact réellement saisi.
+  // Exemple : 4 h = 0,5 jour économique, sans arrondi à une journée entière.
+  const economicDays=exact?elapsedDays:exactProjectedDays;
+  const rental=rentalExpensesTotal(a),otherDirect=directExpensesTotal(a),externalCost=actualWorkersTotal(p,finalMode),directExtra=miniCost+mealCost+rental+otherDirect+externalCost,directCosts=lineData.projected+directExtra,marginAfterDirectTotal=snap.totals.ref-directCosts,marginAfterDirectPerDay=economicDays?marginAfterDirectTotal/economicDays:0,structureDaily=allCommonDailyCharge(),structureAllocated=economicDays*structureDaily,afterStructureTotal=marginAfterDirectTotal-structureAllocated,afterStructurePerDay=economicDays?afterStructureTotal/economicDays:0,remunerationDaily=remunerationDailyCharge(),remunerationAllocated=economicDays*remunerationDaily,resultBeforeTaxTotal=afterStructureTotal-remunerationAllocated,resultBeforeTaxPerDay=economicDays?resultBeforeTaxTotal/economicDays:0,progress=days?Math.min(100,elapsedDays/days*100):0;
+  return {days,economicDays,exactProjectedDays,elapsedDays,progress,observedMiniDays:tracking.miniPelleDays,miniDays,miniCost,observedMeals:tracking.meals,mealCount,mealCost,rental,otherDirect,externalCost,directExtra,directCosts,marginAfterDirectTotal,marginAfterDirectPerDay,structureDaily,structureAllocated,afterStructureTotal,afterStructurePerDay,remunerationDaily,remunerationAllocated,resultBeforeTaxTotal,resultBeforeTaxPerDay,beforeSalaryTotal:afterStructureTotal,beforeSalaryPerDay:afterStructurePerDay,afterSalaryTotal:resultBeforeTaxTotal,afterSalaryPerDay:resultBeforeTaxPerDay,lineData}
 }
 function renderProjects(){
   $('projectsSummary').innerHTML=[['Chantiers',app.projects.length,'devis séparés'],['Prévisions figées',app.projects.filter(p=>p.previsionFrozen).length,'photos signature'],['Suivis en cours',app.projects.filter(p=>p.status==='in_progress').length,'chantiers actualisés']].map(x=>`<div class="kpi"><div class="name">${x[0]}</div><div class="value">${x[1]}</div><div class="note">${x[2]}</div></div>`).join('');
@@ -1536,14 +1500,14 @@ function renderActual(){
   actualCards.forEach(id=>$(id).classList.remove('hidden'));const readonly=p.status==='completed';renderTrackingMode(p,readonly);syncTrackingIntoActual(p);
   const snap=p.signatureSnapshot,a=p.actual,finalV09=readonly&&a.finalSnapshot?.engineVersion==='0.9',m=finalV09?a.finalSnapshot.metrics:actualProjectionMetrics(p,readonly),base=signatureMetrics(p),quality=signatureQuality(p),deltaDay=m.resultBeforeTaxPerDay-base.resultBeforeTaxPerDay;
   $('actualStatus').className=`status ${readonly?'ok':p.status==='in_progress'?'warn':'ok'}`;$('actualStatus').textContent=readonly?'Terminé':p.status==='in_progress'?'Suivi en cours':'Prêt à démarrer';
-  $('actualKpis').innerHTML=[['Prévu signature',`${eur(base.resultBeforeTaxPerDay)}/j`,'résultat avant IS'],['Projection actualisée',m.days?`${eur(m.resultBeforeTaxPerDay)}/j`:'—','résultat avant IS'],['Écart / jour',quality.reliable&&m.days?`${deltaDay>=0?'+':''}${eur(deltaDay)}/j`:'Non fiable',quality.reliable?(deltaDay>=0?'mieux que prévu':'moins bien que prévu'):'prévision legacy incomplète'],['Durée prévue',`${nfr(base.days)} j`,'signature figée'],['Durée actualisée',`${nfr(m.days)} j`,'jours retenus en projection'],['Coûts postes incomplets',m.lineData?.incomplete??0,'à compléter avant bilan final']].map(x=>`<div class="kpi"><div class="name">${x[0]}</div><div class="value">${x[1]}</div><div class="note">${x[2]}</div></div>`).join('');
+  $('actualKpis').innerHTML=[['Prévu signature',`${eur(base.resultBeforeTaxPerDay)}/j`,'résultat avant IS'],['Projection actualisée',m.days?`${eur(m.resultBeforeTaxPerDay)}/j`:'—','résultat avant IS'],['Écart / jour',quality.reliable&&m.days?`${deltaDay>=0?'+':''}${eur(deltaDay)}/j`:'Non fiable',quality.reliable?(deltaDay>=0?'mieux que prévu':'moins bien que prévu'):'prévision legacy incomplète'],['Durée prévue',`${nfr(base.days)} j`,'signature figée'],['Durée actualisée',`${nfr(m.economicDays??m.days)} j`,'temps exact utilisé pour les coûts'],['Coûts postes incomplets',m.lineData?.incomplete??0,'à compléter avant bilan final']].map(x=>`<div class="kpi"><div class="name">${x[0]}</div><div class="value">${x[1]}</div><div class="note">${x[2]}</div></div>`).join('');
   renderPilotBoard(p,m,base,quality);
   ['trackingModeCard','actualProgressCard','actualCostsCard','actualWorkersCard','actualLinesCard'].forEach(id=>$(id).classList.toggle('locked',readonly));
   $('elapsedTimeMode').value='hour';$('elapsedTimeValue').value=`${nfr(a.elapsedTimeValue)} h`;$('elapsedDaysEquivalent').value=`${nfr(m.elapsedDays)} jour(s) réel(s)`;$('actualTimeMode').value=a.timeMode;$('actualTimeValue').value=inputFmt(a.timeValue);$('actualDaysEquivalent').value=`${nfr(m.days)} jour(s) retenu(s)${m.exactProjectedDays!==m.days?` • ${nfr(m.exactProjectedDays)} j exacts`:''}`;
   const durationLocked=readonly||a.trackingMode==='retrospective';['actualTimeMode','actualTimeValue'].forEach(id=>$(id).disabled=durationLocked);
   $('actualProgressBar').style.width=`${m.progress||0}%`;$('actualProgressText').textContent=`${nfr(m.progress||0,1)} % du temps projeté • ${nfr(m.elapsedDays||0)} j réels sur ${nfr(m.days||0)} j retenus`;
   $('actualDerivedCosts').innerHTML=`<div><b>${nfr(m.miniDays)} j</b><span>mini-pelle projetée • ${eur(m.miniCost)}${m.miniDays!==m.observedMiniDays?` • ${nfr(m.observedMiniDays)} j constaté(s)`:''}</span></div><div><b>${nfr(m.mealCount)}</b><span>repas projetés • ${eur(m.mealCost)}${m.mealCount!==m.observedMeals?` • ${nfr(m.observedMeals)} saisi(s)`:''}</span></div><div><b>${eur(m.rental)}</b><span>locations</span></div><div><b>${eur(m.otherDirect)}</b><span>dépenses directes</span></div>`;
-  $('actualCostStrip').innerHTML=`<div><b>${eur(m.lineData?.projected||0)}</b><span>coûts postes projetés</span></div><div><b>${eur(m.externalCost)}</b><span>renfort retenu</span></div><div><b>${eur(m.structureAllocated)}</b><span>structure projetée</span></div><div><b>${eur(m.remunerationAllocated)}</b><span>rémunération projetée</span></div>`;
+  $('actualCostStrip').innerHTML=`<div><b>${eur(m.lineData?.projected||0)}</b><span>coûts postes projetés</span></div><div><b>${eur(m.externalCost)}</b><span>renfort retenu</span></div><div><b>${eur(m.structureAllocated)}</b><span>structure calculée au temps exact</span></div><div><b>${eur(m.remunerationAllocated)}</b><span>rémunération calculée au temps exact</span></div>`;
   renderDailyLog(p,readonly);renderDailyProfit(p);renderExpenseLists(p,readonly);renderActualWorkers(p,readonly);renderLineProgress(p,readonly);renderActualLines(p,readonly);
   const deltaTotal=m.resultBeforeTaxTotal-base.resultBeforeTaxTotal,deltaCls=deltaDay>=0?'ok':'bad';
   const comparison=quality.reliable?`<div class="verdict ${deltaCls}" style="margin-top:12px"><div>${deltaDay>=0?'PROJECTION AU-DESSUS DE LA SIGNATURE':'PROJECTION SOUS LA SIGNATURE'}</div><div class="mini" style="margin-top:7px;font-weight:600">Prévu ${eur(base.resultBeforeTaxPerDay)}/j → actualisé ${eur(m.resultBeforeTaxPerDay)}/j avant IS. Écart ${deltaDay>=0?'+':''}${eur(deltaDay)}/j et ${deltaTotal>=0?'+':''}${eur(deltaTotal)} au total.</div></div>`:`<div class="verdict warn" style="margin-top:12px"><div>⚠️ COMPARAISON SIGNATURE NON FIABLE</div><div class="mini" style="margin-top:7px;font-weight:600">${esc(quality.reason)} Le résultat économique actualisé reste calculé, mais le rouge prévu / réel ne doit pas servir à juger ce chantier.</div></div>`;
@@ -1605,7 +1569,6 @@ $('copyCloudLink').addEventListener('click',async()=>{
   catch{prompt('Copie ce lien et ouvre-le sur l’iPhone :',link)}
 });
 $('cloudSignIn').addEventListener('click',signInCloud);
-$('cloudForgotPassword').addEventListener('click',requestCloudPasswordReset);
 $('cloudSignUp').addEventListener('click',signUpCloud);
 $('cloudSignOut').addEventListener('click',signOutCloud);
 $('pushCloudBtn').addEventListener('click',forcePushCloud);
