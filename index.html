@@ -7,7 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <title>Soléo Pilot — Rentabilité LAB V1.3.4 Correctif calcul horaire</title>
+  <title>Soléo Pilot — Rentabilité LAB V1.4 Fluidité chantier</title>
   <style>
     :root{
       --bg:#101417;--panel:#171d21;--panel2:#1f282e;--text:#f3f5f7;--muted:#aeb8c2;
@@ -149,13 +149,24 @@
     .pilot-signal.good{border-color:#2f6946;background:#14271c}.pilot-signal.warn{border-color:#705b27;background:#292316}.pilot-signal.bad{border-color:#6b2c31;background:#2b171a}.pilot-signal.neutral{border-color:#46545c}
     .pilot-main{display:flex;gap:12px;align-items:center}.pilot-light{width:48px;height:48px;border-radius:50%;flex:0 0 48px;box-shadow:0 0 0 7px rgba(255,255,255,.035)}.pilot-light.good{background:var(--ok)}.pilot-light.warn{background:var(--warn)}.pilot-light.bad{background:var(--bad)}.pilot-light.neutral{background:#69757c}
     @media(max-width:720px){.pilot-board{grid-template-columns:1fr 1fr}.pilot-board .pilot-signal:first-child{grid-column:1/-1}}
+    .compact-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .compact-mode{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}.compact-mode .mode-label{font-size:12px;color:var(--muted);font-weight:850}
+    .compact-mode .btn{padding:8px 10px;font-size:12px}
+    .accordion-row{border:1px solid var(--line);border-radius:14px;background:var(--panel2);margin-top:8px;overflow:hidden}
+    .accordion-row>summary{list-style:none;cursor:pointer;padding:12px;display:grid;grid-template-columns:minmax(220px,1.7fr) auto auto auto;gap:10px;align-items:center}
+    .accordion-row>summary::-webkit-details-marker{display:none}.accordion-row[open]>summary{border-bottom:1px solid var(--line);background:#20282e}
+    .accordion-title{font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.accordion-meta{font-size:12px;color:var(--muted);white-space:nowrap}.accordion-total{font-weight:900;white-space:nowrap}.accordion-status{font-size:11px;font-weight:900;padding:5px 8px;border-radius:999px;white-space:nowrap}.accordion-status.complete{background:#163020;color:#adf0c3}.accordion-status.pending{background:#322814;color:#ffdb96}
+    .accordion-body{padding:12px}.validated-group{border:1px solid #2f6946;background:#11231b;border-radius:14px;margin-bottom:10px;overflow:hidden}.validated-group summary{cursor:pointer;list-style:none;padding:12px;font-weight:900;color:#adf0c3}.validated-group summary::-webkit-details-marker{display:none}.validated-group[open] summary{border-bottom:1px solid #2f6946}
+    .sticky-validation{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:15;margin-top:12px;padding:8px;background:rgba(16,20,23,.92);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(8px)}.sticky-validation .btn{width:100%}
+    .simple-section{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}.section-order-note{font-size:11px;color:var(--muted)}
+    @media(max-width:820px){.compact-kpis{grid-template-columns:1fr 1fr}.accordion-row>summary{grid-template-columns:1fr auto}.accordion-meta{grid-column:1}.accordion-status{grid-column:2;grid-row:1}.accordion-total{grid-column:2;grid-row:2}.accordion-title{max-width:70vw}}
   </style>
 </head>
 <body>
 <header>
   <div class="top">
     <div class="brand"><div class="logo">SP</div><div><h1>Soléo Pilot — Rentabilité</h1><div class="sub">Multi-chantiers + lecteur PDF renforcé + suivi réel + moteur rentabilité réelle + suivi terrain — prototype séparé du Pilot Terrain</div></div></div>
-    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.3.4 Correctif calcul horaire</div></div>
+    <div class="top-right"><div id="syncChip" class="sync-chip warn">☁️ Synchro non configurée</div><div class="lab">LAB V1.4 Fluidité chantier</div></div>
   </div>
   <nav>
     <button data-view="projects" class="active">Chantiers</button>
@@ -290,113 +301,105 @@
   <section id="actual" class="view">
     <div class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
-        <div><h2>Suivi réel chantier</h2><div class="muted mini">La prévision signature reste figée. Ici tu mets à jour la réalité et la projection du chantier.</div></div>
+        <div><h2>Tableau de bord chantier</h2><div class="muted mini">Lecture immédiate : rentabilité, écart avec le devis, temps réellement saisi et données à compléter.</div></div>
         <span id="actualStatus" class="status warn">Prévision à figer</span>
       </div>
-      <div id="actualKpis" class="grid grid3" style="margin-top:12px"></div>
+      <div id="actualKpis" class="grid compact-kpis" style="margin-top:12px"></div>
     </div>
-    <div class="card" id="pilotBoardCard">
+
+    <div class="card" id="dailyEntryCard">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap">
-        <div><h3>🚦 Tableau de bord chantier</h3><div class="muted mini">Lecture immédiate de la projection actuelle. Aucun jour de fin n’est inventé : le tableau compare seulement les données saisies, la prévision figée et ton objectif.</div></div>
-        <span id="pilotDataQuality" class="status warn">Données à compléter</span>
-      </div>
-      <div id="pilotBoard" class="pilot-board"></div>
-    </div>
-    <div class="card" id="trackingModeCard">
-      <h3>Mode de suivi</h3>
-      <div class="tracking-choice" id="trackingModeChoice">
-        <button class="btn" type="button" data-mode="daily">📱 Saisie quotidienne</button>
-        <button class="btn" type="button" data-mode="retrospective">🧾 Chantier terminé / saisie rétrospective</button>
+        <div><h3>📱 Saisie du chantier</h3><div class="muted mini">L’action principale au quotidien : temps, mini-pelle, repas, renfort et note.</div></div>
+        <div class="compact-mode" id="trackingModeChoice"><span class="mode-label">Mode :</span><button class="btn" type="button" data-mode="daily">Quotidien</button><button class="btn" type="button" data-mode="retrospective">Rétrospectif</button></div>
       </div>
       <div class="muted mini" id="trackingModeHelp" style="margin-top:8px"></div>
-    </div>
-    <div class="card" id="dailyEntryCard">
-      <h3>📱 Saisie rapide du jour</h3>
-      <div class="muted mini">Pensée pour le téléphone. Tu saisis chaque maison séparément. Le temps passé à ce jour est recalculé à partir du journal.</div>
       <div class="grid grid3" style="margin-top:12px">
         <div><label>Date</label><input id="dailyDate" type="date"></div>
-        <div><label>Heures Jimmy sur ce chantier</label><input id="dailyJimmyHours" inputmode="decimal" placeholder="Ex : 5"></div>
-        <div><label>Mini-pelle personnelle</label><select id="dailyEngineMode"><option value="none">Non utilisée</option><option value="soleo">Mini-pelle Soléo</option></select><div class="mini muted">Les locations se saisissent une seule fois, avec le montant final de la facture, dans « Locations / engins spécifiques ».</div></div>
+        <div><label>Temps Jimmy</label><div style="display:grid;grid-template-columns:1fr 105px;gap:8px"><input id="dailyJimmyHours" inputmode="decimal" placeholder="Ex : 5"><select id="dailyJimmyUnit"><option value="hour">Heures</option><option value="day">Jours</option></select></div></div>
+        <div><label>Mini-pelle personnelle</label><select id="dailyEngineMode"><option value="none">Non utilisée</option><option value="soleo">Mini-pelle Soléo</option></select><div class="mini muted">Les locations se saisissent plus bas, une seule fois, avec leur montant réel.</div></div>
         <div id="dailyMiniShareWrap" class="hidden"><label>Part mini-pelle Soléo</label><select id="dailyMiniShare"><option value="0">Non</option><option value="1">Journée entière</option><option value="0.75">0,75 j</option><option value="0.5">0,50 j</option><option value="0.25">0,25 j</option></select></div>
         <div id="dailyRentalAmountWrap" class="hidden"><input id="dailyRentalAmount" inputmode="decimal" value="0"></div>
         <div><label>Repas Soléo payés</label><input id="dailyMeals" inputmode="decimal" value="1"></div>
-        <div><label>Heures renfort sur ce chantier</label><input id="dailyWorkerHours" inputmode="decimal" placeholder="Ex : 5"></div>
-        <div><label>Valeur des travaux réalisés aujourd’hui HT (€)</label><input id="dailyProductionHT" inputmode="decimal" placeholder="Ex : 1 250"><div class="mini muted">Saisie facultative mais nécessaire pour calculer honnêtement la rentabilité de la journée.</div></div>
-        <div><label>Note rapide</label><textarea id="dailyNote" placeholder="Ex : fondations maison 1, retard pluie, livraison ferraille…"></textarea></div>
+        <div><label>Temps renfort</label><div style="display:grid;grid-template-columns:1fr 105px;gap:8px"><input id="dailyWorkerHours" inputmode="decimal" placeholder="Ex : 5"><select id="dailyWorkerUnit"><option value="hour">Heures</option><option value="day">Jours</option></select></div></div>
+        <div><label>Valeur des travaux réalisés aujourd’hui HT (€)</label><input id="dailyProductionHT" inputmode="decimal" placeholder="Facultatif"><div class="mini muted">Conservée pour l’instant, mais la rentabilité principale est désormais suivie par poste validé.</div></div>
+        <div><label>Note rapide</label><textarea id="dailyNote" placeholder="Ex : retard pluie, livraison, difficulté particulière…"></textarea></div>
       </div>
-      <div class="actions"><button class="btn primary" id="saveDailyEntry">💾 Enregistrer la journée</button></div>
+      <div class="actions"><button class="btn primary" id="saveDailyEntry">💾 Enregistrer la saisie</button></div>
       <div id="dailySummary" class="calc-strip"></div>
       <details id="dailyHistory" class="history-box"><summary>▼ Voir / modifier l’historique des saisies</summary><div id="dailyEntriesList" class="daily-list"></div></details>
     </div>
-    <div class="card" id="dailyProfitCard">
-      <h3>📊 Rentabilité quotidienne</h3>
-      <div class="muted mini">Le résultat d’une journée n’est affiché que si tu renseignes la valeur HT des travaux réalisés. L’application ne devine pas et ne projette aucune date de fin.</div>
-      <div id="dailyProfitSummary" class="day-profit-grid"></div>
-      <details class="history-box" id="dailyProfitHistory"><summary>▼ Voir l’historique de rentabilité jour par jour</summary><div id="dailyProfitList"></div></details>
-    </div>
+
     <div class="card hidden" id="retrospectiveCard">
       <h3>🧾 Saisie rétrospective du chantier</h3>
-      <div class="muted mini">Tu rentres les totaux réels sans créer une fausse journée de 126 h dans le journal.</div>
+      <div class="muted mini">Renseigne les totaux réels d’un chantier déjà terminé.</div>
       <div class="grid grid2" style="margin-top:12px">
         <div><label>Heures Jimmy — total réel</label><input id="retroJimmyHours" inputmode="decimal" placeholder="Ex : 126"></div>
         <div><label>Jours mini-pelle utilisés</label><input id="retroMiniDays" inputmode="decimal" placeholder="Ex : 16"></div>
         <div><label>Repas Soléo payés — total</label><input id="retroMeals" inputmode="decimal" placeholder="Ex : 16"></div>
         <div><label>Heures renfort — total constaté</label><input id="retroWorkerHours" inputmode="decimal" placeholder="Ex : 40"></div>
       </div>
-      <div class="summary-ok" style="margin-top:12px">Les totaux alimentent directement le temps passé, la mini-pelle, les repas et le renfort constaté.</div>
     </div>
-    <div class="card" id="actualProgressCard">
-      <h3>Avancement et durée actualisée</h3>
-      <div class="grid grid3">
-        <div class="hidden"><select id="elapsedTimeMode"><option value="hour" selected>Heures</option></select></div>
-        <div><label>Temps passé à ce jour</label><input id="elapsedTimeValue" disabled></div>
-        <div><label>Équivalent jours réels</label><input id="elapsedDaysEquivalent" disabled></div>
-        <div><label>Saisie durée totale actualisée</label><select id="actualTimeMode"><option value="day">Jours</option><option value="hour">Heures</option></select></div>
-        <div><label>Durée totale actualisée</label><input id="actualTimeValue" inputmode="decimal"></div>
-        <div><label>Jours retenus en projection</label><input id="actualDaysEquivalent" disabled></div>
-      </div>
-      <div class="progressline" style="margin-top:14px"><div id="actualProgressBar"></div></div>
-      <div class="mini muted" id="actualProgressText" style="margin-top:7px">0 % d'avancement temps</div>
-    </div>
+
     <div class="card" id="actualCostsCard">
-      <h3>Coûts chantier actualisés</h3>
-      <div id="actualDerivedCosts" class="calc-strip"></div>
-      <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <h3>Locations et dépenses générales</h3>
+      <div>
         <h3 style="font-size:16px">Locations / engins spécifiques</h3>
         <div id="actualRentalList"></div>
         <div class="actions"><button class="btn" id="addActualRental">+ Ajouter une location</button></div>
       </div>
-      <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <div class="simple-section">
         <h3 style="font-size:16px">Dépenses directes hors lignes du devis</h3>
-        <div class="muted mini">Péages, surcoût carburant, IK chantier, matériaux non lus, achat réutilisable… Une dépense = une ligne claire.</div>
+        <div class="muted mini">Péages, surcoût carburant, achat réutilisable ou autre coût non rattaché à une ligne.</div>
         <div id="actualDirectExpensesList"></div>
         <div class="actions"><button class="btn primary" id="addActualDirectExpense">+ Ajouter une dépense directe</button></div>
       </div>
-      <div class="calc-strip" id="actualCostStrip"></div>
+      <div id="actualDerivedCosts" class="hidden"></div><div id="actualCostStrip" class="hidden"></div>
     </div>
+
     <div class="card" id="actualWorkersCard">
-      <h3>Renfort extérieur / sous-traitance actualisé</h3>
-      <div class="muted mini">Le premier renfort peut être lié aux heures saisies dans le journal. Tarif par défaut : 200 €/jour, modifiable. Une facture réelle finale peut remplacer le coût théorique.</div>
+      <h3>Renfort extérieur / sous-traitance réel</h3>
+      <div class="muted mini">Uniquement les interventions réellement saisies. Aucun renfort théorique n’est affiché dans l’historique.</div>
       <div id="actualWorkersList" style="margin-top:12px"></div>
       <div class="actions"><button class="btn primary edit-control" id="addActualWorker">+ Ajouter un renfort réel</button></div>
     </div>
-    <div class="card" id="lineProgressCard">
-      <h3>🚦 Avancement par lignes du devis</h3>
-      <div class="muted mini">Coche les lignes réellement terminées. Le LAB affecte automatiquement le temps et les coûts accumulés depuis la validation précédente, sans te demander de répartir les heures ligne par ligne.</div>
-      <div id="lineProgressSummary" class="calc-strip"></div>
-      <div id="lineProgressList" class="progress-line-list"></div>
-      <div class="actions"><button class="btn primary" id="validateSelectedLinesBtn">✅ Valider les lignes cochées</button></div>
-      <div id="lineCheckpointHistory"></div>
-    </div>
+
     <div class="card" id="actualLinesCard">
-      <h3>Coûts réels / actualisés par poste</h3>
-      <div class="muted mini">Tant qu'un coût est « À compléter », Pilot garde au minimum le coût prévu. Quand il est « Complet », le coût réel remplace la prévision.</div>
+      <h3>Coûts réels par poste</h3>
+      <div class="muted mini">Chaque poste reste replié. Le résumé affiche le nombre de dépenses, leur cumul et l’état du poste.</div>
       <div id="actualLinesContainer" style="margin-top:12px"></div>
     </div>
+
+    <div class="card" id="lineProgressCard">
+      <h3>🚦 Avancement par lignes du devis</h3>
+      <div class="muted mini">Coche les lignes réellement terminées. Le temps et les coûts saisis depuis la validation précédente sont clôturés sur cette étape.</div>
+      <div id="lineProgressSummary" class="calc-strip"></div>
+      <div id="lineProgressList" class="progress-line-list"></div>
+      <div class="sticky-validation"><button class="btn primary" id="validateSelectedLinesBtn">✅ Valider les lignes cochées</button></div>
+      <div id="lineCheckpointHistory"></div>
+    </div>
+
+    <div class="card" id="actualProgressCard">
+      <h3>Avancement et durée actualisée</h3>
+      <div class="muted mini">Bilan à consulter ponctuellement. Le temps réellement saisi est séparé de la durée totale projetée.</div>
+      <div class="grid grid3">
+        <div class="hidden"><select id="elapsedTimeMode"><option value="hour" selected>Heures</option></select></div>
+        <div><label>Temps réellement saisi</label><input id="elapsedTimeValue" disabled></div>
+        <div><label>Équivalent jours réels</label><input id="elapsedDaysEquivalent" disabled></div>
+        <div><label>Unité de la durée totale projetée</label><select id="actualTimeMode"><option value="day">Jours</option><option value="hour">Heures</option></select></div>
+        <div><label>Durée totale projetée</label><input id="actualTimeValue" inputmode="decimal"></div>
+        <div><label>Durée retenue pour la projection</label><input id="actualDaysEquivalent" disabled></div>
+      </div>
+      <div class="progressline" style="margin-top:14px"><div id="actualProgressBar"></div></div>
+      <div class="mini muted" id="actualProgressText" style="margin-top:7px"></div>
+    </div>
+
     <div class="card">
       <div id="actualComparison"></div>
       <div class="actions" id="actualFinishActions"></div>
     </div>
+    <div id="pilotBoardCard" class="hidden"><div id="pilotDataQuality"></div><div id="pilotBoard"></div></div>
+    <div id="trackingModeCard" class="hidden"></div>
+    <div id="dailyProfitCard" class="hidden"><div id="dailyProfitSummary"></div><details id="dailyProfitHistory"><div id="dailyProfitList"></div></details></div>
   </section>
 
   <section id="charges" class="view">
@@ -502,7 +505,7 @@
 
   <section id="data" class="view">
     <div class="card">
-      <h2>Données du LAB V1.2</h2>
+      <h2>Données du LAB V1.4</h2>
       <p class="muted">Stockage séparé du Pilot Terrain. Exporte une sauvegarde avant chaque mise à jour. Tu peux aussi restaurer un ancien fichier JSON ici.</p>
       <input id="importBackupInput" class="hidden" type="file" accept="application/json,.json">
       <div class="actions">
@@ -511,7 +514,7 @@
         <button class="btn danger" id="clearBtn">Effacer les données locales de cet appareil</button>
       </div>
       <div id="importBackupStatus" class="mini muted" style="margin-top:10px">Aucune sauvegarde importée.</div>
-      <div class="summary-ok" style="margin-top:14px"><strong>V1.2.1 :</strong> rentabilité quotidienne avec production HT saisie, coût complet par journée, historique clair, modification/suppression des saisies, import/export JSON et aucune estimation automatique de date de fin.</div>
+      <div class="summary-ok" style="margin-top:14px"><strong>V1.4 :</strong> suivi compact, rentabilité par poste validé, coûts par ligne repliables, renforts réels datés et tableau de bord simplifié.</div>
     </div>
   </section>
 </main>
@@ -565,7 +568,7 @@ function openWorkerModal(){
   entryModalMode='worker';
   $('entryModalTitle').textContent='Ajouter un renfort réel';
   $('entryModalHelp').textContent='Choisis l’unité, la quantité et le tarif. Rien ne sera ajouté automatiquement.';
-  $('entryModalFields').innerHTML=`<div><label>Intervenant / entreprise</label><input id="modalWorkerName" value="Renfort / sous-traitant" autocomplete="off"></div><div><label>Facturation</label><select id="modalWorkerUnit">${workerUnitOptions('day')}</select></div><div><label>Quantité</label><input id="modalWorkerQty" inputmode="decimal" placeholder="Ex : 0,5 ou 4"></div><div><label>Coût unitaire (€)</label><input id="modalWorkerCost" inputmode="decimal" value="200"></div><div><label>Facture réelle finale (€)</label><input id="modalWorkerInvoice" inputmode="decimal" placeholder="Facultatif"></div>`;
+  $('entryModalFields').innerHTML=`<div><label>Date</label><input id="modalWorkerDate" type="date" value="${todayIso()}"></div><div><label>Intervenant / entreprise</label><input id="modalWorkerName" value="Renfort / sous-traitant" autocomplete="off"></div><div><label>Facturation</label><select id="modalWorkerUnit">${workerUnitOptions('day')}</select></div><div><label>Quantité</label><input id="modalWorkerQty" inputmode="decimal" placeholder="Ex : 0,5 ou 4"></div><div><label>Coût unitaire (€)</label><input id="modalWorkerCost" inputmode="decimal" value="200"></div><div><label>Facture réelle finale (€)</label><input id="modalWorkerInvoice" inputmode="decimal" placeholder="Facultatif"></div>`;
   $('entryModal').classList.add('open');$('entryModal').setAttribute('aria-hidden','false');
   setTimeout(()=>$('modalWorkerQty')?.focus(),30);
 }
@@ -590,7 +593,7 @@ function saveEntryModal(){
     if(!(qty>0)){showToast('Renseigne une quantité supérieure à 0.','bad');$('modalWorkerQty')?.focus();return}
     if(!(unitCost>0)&&!(invoiceAmount>0)){showToast('Renseigne un tarif ou une facture réelle.','bad');$('modalWorkerCost')?.focus();return}
     p.actual.externalWorkers=p.actual.externalWorkers||[];
-    p.actual.externalWorkers.push({id:uid(),name,unit,qty,unitCost,mode:'no_vat',journalLinked:false,invoiceAmount});
+    p.actual.externalWorkers.push({id:uid(),date:$('modalWorkerDate')?.value||todayIso(),name,unit,qty,unitCost,mode:'no_vat',journalLinked:false,invoiceAmount,createdAt:new Date().toISOString()});
     markActualTouched(p);saveApp();closeEntryModal();renderActual();
     setTimeout(()=>{const d=document.querySelector('#actualWorkersList details');if(d)d.open=true},0);
     showToast(`Renfort enregistré : ${nfr(qty)} ${WORKER_UNITS[unit]}(s)`);
@@ -722,10 +725,14 @@ function validateSelectedLines(p){
 }
 function renderLineProgress(p,readonly){
   ensureLineProgress(p);const rows=projectionLineData(p).rows,cps=p.actual.validationCheckpoints||[];
-  const valid=rows.filter(r=>lp(p,r.no).state==='validated').length,days=sum(cps,c=>c.jimmyDays),result=sum(cps,c=>c.resultBeforeTax),sale=sum(cps,c=>c.saleHT);
-  $('lineProgressSummary').innerHTML=`<div><b>${valid}/${rows.length}</b><span>lignes validées</span></div><div><b>${eur(sale)}</b><span>CA HT validé</span></div><div><b>${nfr(days)} j</b><span>temps clôturé</span></div><div><b>${eur(result)}</b><span>résultat cumulé avant IS • ${days?eur(result/days)+'/j':'—'}</span></div>`;
-  $('lineProgressList').innerHTML=rows.map(r=>{const x=lp(p,r.no),icon=x.state==='validated'?'✓':x.state==='in_progress'?'●':'○';return `<div class="progress-line-row ${x.state}" data-lp="${esc(r.no)}"><button class="line-state-btn" ${readonly||x.state==='validated'?'disabled':''}>${icon}</button><div><b>${esc(r.no)} — ${esc(r.description)}</b><div class="mini muted">${x.state==='validated'?'Terminée':x.state==='in_progress'?'En cours':'À faire'}${r.actual>0&&x.state!=='validated'?' • dépenses saisies mais hors cumul 🔒':''}</div></div><div class="progress-line-money"><label><input class="lp-check" type="checkbox" ${x.selected?'checked':''} ${readonly||x.state==='validated'?'disabled':''}> terminée</label><div>${eur(r.saleHT)}</div></div></div>`}).join('');
-  $('lineCheckpointHistory').innerHTML=cps.length?`<h3 style="font-size:16px;margin-top:16px">Historique des validations</h3>${[...cps].reverse().map(c=>`<div class="checkpoint-card"><b>${esc((c.lineLabels||[]).join(' + '))}</b><div class="mini muted">${new Date(c.createdAt).toLocaleString('fr-FR')}</div><div class="checkpoint-grid"><div><b>${eur(c.saleHT)}</b><span>CA HT</span></div><div><b>${nfr(c.jimmyHours)} h</b><span>Jimmy</span></div><div><b>${eur(c.lineCost+c.operationalCost)}</b><span>coûts directs</span></div><div><b>${eur(c.resultBeforeTax)}</b><span>avant IS • ${c.jimmyDays?eur(c.resultPerDay)+'/j':'—'}</span></div></div></div>`).join('')}`:'<div class="muted mini">Aucune ligne validée.</div>';
+  const validated=rows.filter(r=>lp(p,r.no).state==='validated'),openRows=rows.filter(r=>lp(p,r.no).state!=='validated');
+  const valid=validated.length,days=sum(cps,c=>c.jimmyDays),result=sum(cps,c=>c.resultBeforeTax),sale=sum(cps,c=>c.saleHT);
+  $('lineProgressSummary').innerHTML=`<div><b>${valid}/${rows.length}</b><span>lignes validées</span></div><div><b>${eur(sale)}</b><span>CA HT validé</span></div><div><b>${nfr(days)} j</b><span>temps réel clôturé</span></div><div><b>${eur(result)}</b><span>résultat cumulé avant IS • ${days?eur(result/days)+'/j':'—'}</span></div>`;
+  const validatedHtml=validated.length?`<details class="validated-group"><summary>▶ Lignes déjà validées (${validated.length})</summary><div style="padding:8px">${validated.map(r=>`<div class="progress-line-row validated"><button class="line-state-btn" disabled>✓</button><div><b>${esc(r.no)} — ${esc(r.description)}</b><div class="mini muted">Terminée</div></div><div class="progress-line-money"><div>${eur(r.saleHT)}</div></div></div>`).join('')}</div></details>`:'';
+  const openHtml=openRows.map(r=>{const x=lp(p,r.no),icon=x.state==='in_progress'?'●':'○';return `<div class="progress-line-row ${x.state}" data-lp="${esc(r.no)}"><button class="line-state-btn" ${readonly?'disabled':''}>${icon}</button><div><b>${esc(r.no)} — ${esc(r.description)}</b><div class="mini muted">${x.state==='in_progress'?'En cours':'À faire'}${r.actual>0?' • dépenses saisies':''}</div></div><div class="progress-line-money"><label><input class="lp-check" type="checkbox" ${x.selected?'checked':''} ${readonly?'disabled':''}> terminée</label><div>${eur(r.saleHT)}</div></div></div>`}).join('');
+  $('lineProgressList').innerHTML=validatedHtml+openHtml;
+  $('lineCheckpointHistory').innerHTML=cps.length?`<h3 style="font-size:16px;margin-top:16px">Rentabilité des postes / étapes validés</h3>${[...cps].reverse().map(c=>`<div class="checkpoint-card"><b>${esc((c.lineLabels||[]).join(' + '))}</b><div class="mini muted">Validé le ${new Date(c.createdAt).toLocaleString('fr-FR')}</div><div class="checkpoint-grid"><div><b>${eur(c.saleHT)}</b><span>CA HT du poste</span></div><div><b>${nfr(c.jimmyHours)} h</b><span>temps Jimmy</span></div><div><b>${eur(c.lineCost+c.operationalCost)}</b><span>coûts du poste</span></div><div><b>${eur(c.resultBeforeTax)}</b><span>résultat avant IS • ${c.jimmyDays?eur(c.resultPerDay)+'/j':'—'}</span></div></div></div>`).join('')}`:'<div class="muted mini" style="margin-top:12px">Aucun poste validé pour le moment.</div>';
+  const selected=openRows.filter(r=>lp(p,r.no).selected).length;$('validateSelectedLinesBtn').textContent=selected?`✅ Valider ${selected} ligne${selected>1?'s':''} cochée${selected>1?'s':''}`:'✅ Valider les lignes cochées';
   if(readonly)return;
   document.querySelectorAll('[data-lp]').forEach(row=>{const x=lp(p,row.dataset.lp);row.querySelector('.lp-check').addEventListener('change',e=>{x.selected=e.target.checked;if(x.selected&&x.state==='todo')x.state='in_progress';saveApp();renderLineProgress(p,false)});row.querySelector('.line-state-btn').addEventListener('click',()=>{x.selected=!x.selected;if(x.selected&&x.state==='todo')x.state='in_progress';saveApp();renderLineProgress(p,false)})});
 }
@@ -1178,7 +1185,7 @@ function actualWorkerQty(p,w,finalMode=false){
   return exact?observed:Math.max(observed,plannedWorkerQty(p,w));
 }
 function actualWorkerCost(p,w,finalMode=false){if(Number(w?.invoiceAmount)>0)return chargeNet({amount:Number(w.invoiceAmount),mode:w.mode||'no_vat'});return chargeNet({amount:actualWorkerQty(p,w,finalMode)*(Number(w?.unitCost)||0),mode:w.mode||'no_vat'})}
-function actualWorkersTotal(p,finalMode=false){return sum(p.actual.externalWorkers,w=>actualWorkerCost(p,w,finalMode))}
+function actualWorkersTotal(p,finalMode=false){return sum(p.actual.externalWorkers,w=>actualWorkerCost(p,w,true))}
 function renderTrackingMode(p,readonly){
   const mode=p.actual.trackingMode||'daily';
   document.querySelectorAll('#trackingModeChoice [data-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.mode===mode);b.disabled=readonly});
@@ -1220,7 +1227,7 @@ function renderDailyProfit(p){
 }
 function renderDailyLog(p,readonly){
   const card=$('dailyEntryCard');if(!card)return;card.classList.toggle('locked',readonly);$('dailyDate').value=$('dailyDate').value||todayIso();
-  ['dailyDate','dailyJimmyHours','dailyEngineMode','dailyMiniShare','dailyRentalAmount','dailyMeals','dailyWorkerHours','dailyProductionHT','dailyNote','saveDailyEntry'].forEach(id=>$(id).disabled=readonly);
+  ['dailyDate','dailyJimmyHours','dailyJimmyUnit','dailyEngineMode','dailyMiniShare','dailyRentalAmount','dailyMeals','dailyWorkerHours','dailyWorkerUnit','dailyProductionHT','dailyNote','saveDailyEntry'].forEach(id=>$(id).disabled=readonly);
   const totals=trackingTotals(p);
   $('dailySummary').innerHTML=`<div><b>${nfr(totals.jimmyHours)} h</b><span>Main-d’œuvre Soléo • ${nfr(totals.jimmyHours/8)} j</span></div><div><b>${nfr(totals.workerHours)} h</b><span>Renfort extérieur • ${nfr(totals.workerHours/8)} j</span></div><div><b>${nfr(totals.miniPelleDays)} j</b><span>Mini-pelle personnelle</span></div><div><b>${nfr(totals.meals)}</b><span>Repas saisis</span></div>`;
   const entries=[...(p.actual.dailyEntries||[])].sort((a,b)=>String(b.date).localeCompare(String(a.date))||String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -1235,14 +1242,14 @@ function renderDailyLog(p,readonly){
   });
 }
 function clearDailyEntryForm(){
-  editingDailyEntryId=null;$('dailyDate').value=todayIso();$('dailyJimmyHours').value='';$('dailyEngineMode').value='none';$('dailyMiniShare').value='0';$('dailyRentalAmount').value='';$('dailyMeals').value='1';$('dailyWorkerHours').value='';$('dailyProductionHT').value='';$('dailyNote').value='';
+  editingDailyEntryId=null;$('dailyDate').value=todayIso();$('dailyJimmyUnit').value='hour';$('dailyWorkerUnit').value='hour';$('dailyJimmyHours').value='';$('dailyEngineMode').value='none';$('dailyMiniShare').value='0';$('dailyRentalAmount').value='';$('dailyMeals').value='1';$('dailyWorkerHours').value='';$('dailyProductionHT').value='';$('dailyNote').value='';
 }
 function editDailyLogEntry(p,id){
-  const e=(p.actual.dailyEntries||[]).find(x=>x.id===id);if(!e)return;editingDailyEntryId=id;$('dailyDate').value=e.date||todayIso();$('dailyJimmyHours').value=inputFmt(e.jimmyHours);$('dailyEngineMode').value=(Number(e.miniShare)||0)>0?'soleo':'none';$('dailyMiniShare').value=String(Number(e.miniShare)||0);$('dailyRentalAmount').value='';$('dailyMeals').value=inputFmt(e.meals);$('dailyWorkerHours').value=inputFmt(e.workerHours);$('dailyProductionHT').value=inputFmt(e.productionHT);$('dailyNote').value=e.note||'';$('dailyHistory').open=true;window.scrollTo({top:$('dailyEntryCard').offsetTop-20,behavior:'smooth'});renderDailyLog(p,false)
+  const e=(p.actual.dailyEntries||[]).find(x=>x.id===id);if(!e)return;editingDailyEntryId=id;$('dailyDate').value=e.date||todayIso();$('dailyJimmyUnit').value=e.jimmyUnit||'hour';$('dailyWorkerUnit').value=e.workerUnit||'hour';$('dailyJimmyHours').value=inputFmt((e.jimmyUnit||'hour')==='day'?(Number(e.jimmyHours)||0)/8:e.jimmyHours);$('dailyEngineMode').value=(Number(e.miniShare)||0)>0?'soleo':'none';$('dailyMiniShare').value=String(Number(e.miniShare)||0);$('dailyRentalAmount').value='';$('dailyMeals').value=inputFmt(e.meals);$('dailyWorkerHours').value=inputFmt((e.workerUnit||'hour')==='day'?(Number(e.workerHours)||0)/8:e.workerHours);$('dailyProductionHT').value=inputFmt(e.productionHT);$('dailyNote').value=e.note||'';$('dailyHistory').open=true;window.scrollTo({top:$('dailyEntryCard').offsetTop-20,behavior:'smooth'});renderDailyLog(p,false)
 }
 function saveDailyLogEntry(){
   const p=activeProject();if(!p||!p.previsionFrozen||p.status==='completed')return;
-  const engineMode=$('dailyEngineMode').value||'none';const values={date:$('dailyDate').value||todayIso(),jimmyHours:num($('dailyJimmyHours').value),engineMode,miniShare:engineMode==='soleo'?num($('dailyMiniShare').value):0,rentalAmount:0,meals:num($('dailyMeals').value),workerHours:num($('dailyWorkerHours').value),productionHT:num($('dailyProductionHT').value),note:$('dailyNote').value.trim()};
+  const engineMode=$('dailyEngineMode').value||'none',jimmyUnit=$('dailyJimmyUnit').value||'hour',workerUnit=$('dailyWorkerUnit').value||'hour';const values={date:$('dailyDate').value||todayIso(),jimmyUnit,workerUnit,jimmyHours:num($('dailyJimmyHours').value)*(jimmyUnit==='day'?8:1),engineMode,miniShare:engineMode==='soleo'?num($('dailyMiniShare').value):0,rentalAmount:0,meals:num($('dailyMeals').value),workerHours:num($('dailyWorkerHours').value)*(workerUnit==='day'?8:1),productionHT:num($('dailyProductionHT').value),note:$('dailyNote').value.trim()};
   if(values.jimmyHours<0||values.miniShare<0||values.meals<0||values.workerHours<0||values.productionHT<0){alert('Les valeurs ne peuvent pas être négatives.');return}
   if(!values.jimmyHours&&!values.miniShare&&!values.meals&&!values.workerHours&&!values.productionHT&&!values.note){alert('Renseigne au moins une information.');return}
   if(editingDailyEntryId){const e=p.actual.dailyEntries.find(x=>x.id===editingDailyEntryId);if(e)Object.assign(e,values,{updatedAt:new Date().toISOString()})}
@@ -1448,16 +1455,17 @@ function renderForecast(){
 function freezeForecast(p){const f=forecastMetrics(p);if(!p.validated){alert('Valide d’abord l’analyse du devis.');return}if(!(f.days>0)){alert('Renseigne le temps chantier prévu avant de figer.');return}if(!confirm('Figer définitivement cette prévision signature ? Les montants prévus ne pourront plus être modifiés sur ce chantier.'))return;p.signatureSnapshot=makeSignatureSnapshot(p);p.previsionFrozen=true;p.status='signed';initializeActualFromSignature(p);saveApp();renderAll();switchView('actual')}
 
 function renderActualWorkers(p,readonly){
-  const workers=p.actual.externalWorkers||[];
-  if(!workers.length){
-    $('actualWorkersList').innerHTML='<div class="muted">Aucun renfort actualisé. Dès que tu saisis des heures de renfort dans le journal, un renfort à 200 €/jour est créé automatiquement.</div>';
-    $('addActualWorker').classList.toggle('hidden',readonly);return;
-  }
-  const totalCost=sum(workers,w=>actualWorkerCost(p,w,readonly));
-  const linkedCount=workers.filter(w=>w.journalLinked).length,manualCount=workers.length-linkedCount;
-  const rows=workers.map((w,i)=>{const qty=actualWorkerQty(p,w,readonly),observed=observedWorkerQty(p,w),cost=actualWorkerCost(p,w,readonly);return `<div class="worker-row" data-index="${i}"><div><label>Intervenant / entreprise</label><input class="aw-name" value="${esc(w.name||'')}" ${readonly?'disabled':''}><div class="mini muted">${w.journalLinked?`🔗 Journal : ${nfr(observed)} ${esc(WORKER_UNITS[w.unit||'day'])}(s) constaté(s)`:'Saisie manuelle / sous-traitance séparée'}</div></div><div><label>Facturation</label><select class="aw-unit" ${readonly?'disabled':''}>${workerUnitOptions(w.unit||'day')}</select></div><div><label>${w.journalLinked?'Projection totale retenue':'Quantité retenue'}</label><input value="${inputFmt(qty)}" ${w.journalLinked?'disabled':''} class="aw-qty" inputmode="decimal" ${readonly?'disabled':''}></div><div><label>Coût unitaire (€)</label><input class="aw-cost" inputmode="decimal" value="${inputFmt(w.unitCost??200)}" ${readonly?'disabled':''}></div><div><label>Facture réelle finale (€)</label><input class="aw-invoice" inputmode="decimal" value="${inputFmt(w.invoiceAmount)}" placeholder="facultatif" ${readonly?'disabled':''}></div><div><label>Coût retenu</label><div class="charge-net">${eur(cost)}</div></div>${readonly?'':'<button class="btn danger remove-worker" type="button">×</button>'}</div>`}).join('');
-  $('actualWorkersList').innerHTML=`<div class="calc-strip"><div><b>${eur(totalCost)}</b><span>total renfort retenu</span></div><div><b>${workers.length}</b><span>saisie(s) de renfort</span></div><div><b>${linkedCount}</b><span>liée(s) au journal</span></div><div><b>${manualCount}</b><span>saisie(s) manuelle(s)</span></div></div><details class="history-box" style="margin-top:12px"><summary>▼ Voir / modifier l’historique des renforts</summary><div style="margin-top:12px">${rows}</div></details>`;
-  if(!readonly)document.querySelectorAll('#actualWorkersList .worker-row').forEach(row=>{const i=Number(row.dataset.index),w=p.actual.externalWorkers[i];row.querySelector('.aw-name').addEventListener('change',e=>{w.name=e.target.value;saveApp();renderActual()});row.querySelector('.aw-unit').addEventListener('change',e=>{w.unit=e.target.value;if(w.unit==='fixed'&&!w.journalLinked&&!(Number(w.qty)>0))w.qty=1;saveApp();renderActual()});row.querySelector('.aw-qty').addEventListener('change',e=>{if(!w.journalLinked)w.qty=num(e.target.value);saveApp();renderActual()});row.querySelector('.aw-cost').addEventListener('change',e=>{w.unitCost=num(e.target.value);saveApp();renderActual()});row.querySelector('.aw-invoice').addEventListener('change',e=>{w.invoiceAmount=num(e.target.value);saveApp();renderActual()});row.querySelector('.remove-worker').addEventListener('click',()=>{if(!confirm('Supprimer cette saisie de renfort ?'))return;p.actual.externalWorkers.splice(i,1);saveApp();renderActual()})});$('addActualWorker').classList.toggle('hidden',readonly)
+  const manual=(p.actual.externalWorkers||[]).filter(w=>!w.journalLinked);
+  const journal=(p.actual.dailyEntries||[]).filter(e=>(Number(e.workerHours)||0)>0).map(e=>({date:e.date,name:'Renfort saisi dans la journée',unit:'hour',qty:Number(e.workerHours)||0,unitCost:25,invoiceAmount:0,journalDisplay:true}));
+  const display=[...journal,...manual];
+  const totalHours=sum(journal,w=>w.qty)+sum(manual,w=>w.unit==='hour'?w.qty:w.unit==='day'?w.qty*8:0);
+  const totalDays=totalHours/8+sum(manual,w=>w.unit==='fixed'?0:0);
+  const totalCost=actualWorkersTotal(p,true);
+  if(!display.length){$('actualWorkersList').innerHTML='<div class="muted">Aucun renfort réel saisi.</div>';$('addActualWorker').classList.toggle('hidden',readonly);return}
+  const rows=display.map((w,i)=>{const cost=w.journalDisplay?(Number(w.qty)||0)/8*200:actualWorkerCost(p,w,true);const date=w.date||w.createdAt?.slice(0,10)||'';return `<div class="worker-row" data-manual-index="${w.journalDisplay?'':manual.indexOf(w)}"><div><label>Date / intervenant</label><div class="charge-net">${date?new Date(date+'T12:00:00').toLocaleDateString('fr-FR'):'Date non renseignée'} — ${esc(w.name||'Renfort')}</div></div><div><label>Unité</label><div class="charge-net">${esc(WORKER_UNITS[w.unit]||w.unit)}</div></div><div><label>Quantité</label><div class="charge-net">${nfr(w.qty)}</div></div><div><label>Coût</label><div class="charge-net">${eur(cost)}</div></div><div><label>Origine</label><div class="charge-net">${w.journalDisplay?'Saisie du jour':'Saisie manuelle'}</div></div>${readonly||w.journalDisplay?'<div></div>':'<button class="btn danger remove-worker" type="button">×</button>'}</div>`}).join('');
+  $('actualWorkersList').innerHTML=`<div class="calc-strip"><div><b>${eur(totalCost)}</b><span>coût réel des renforts</span></div><div><b>${nfr(totalDays)} j</b><span>temps de renfort saisi</span></div><div><b>${display.length}</b><span>intervention(s)</span></div></div><details class="history-box" style="margin-top:12px"><summary>▼ Voir l’historique daté des renforts</summary><div style="margin-top:12px">${rows}</div></details>`;
+  if(!readonly)document.querySelectorAll('#actualWorkersList [data-manual-index]').forEach(row=>{if(row.dataset.manualIndex==='')return;row.querySelector('.remove-worker')?.addEventListener('click',()=>{const w=manual[Number(row.dataset.manualIndex)],idx=p.actual.externalWorkers.indexOf(w);if(idx<0||!confirm('Supprimer cette saisie de renfort ?'))return;p.actual.externalWorkers.splice(idx,1);saveApp();renderActual()})});
+  $('addActualWorker').classList.toggle('hidden',readonly)
 }
 function renderExpenseLists(p,readonly){
   const a=p.actual;
@@ -1468,9 +1476,10 @@ function renderExpenseLists(p,readonly){
   document.querySelectorAll('[data-expense]').forEach(row=>{const i=Number(row.dataset.expense),e=a.directExpenses[i];row.querySelector('.de-type').addEventListener('change',ev=>{e.type=ev.target.value;if(e.type==='reusable'&&e.allocationPct===undefined)e.allocationPct=50;saveApp();renderActual()});row.querySelector('.de-label').addEventListener('change',ev=>{e.label=ev.target.value;saveApp();renderActual()});row.querySelector('.de-amount').addEventListener('change',ev=>{e.amount=num(ev.target.value);saveApp();renderActual()});row.querySelector('.de-pct').addEventListener('change',ev=>{e.allocationPct=Math.min(100,Math.max(0,num(ev.target.value)));saveApp();renderActual()});row.querySelector('.de-remove').addEventListener('click',()=>{a.directExpenses.splice(i,1);saveApp();renderActual()})});
 }
 function renderActualLines(p,readonly){
-  const d=projectionLineData(p);$('actualLinesContainer').innerHTML=d.rows.length?d.rows.map(r=>{const cls=r.delta<0?'good':r.delta>0?'bad':'neutral';return `<div class="actual-line-card" data-no="${esc(r.no)}"><div class="actual-line-head"><div><div class="desc">${esc(r.no)} — ${esc(r.description)}</div><div class="mini muted">${r.categoryId==='manual_supply'?'Fourniture manuelle':esc(categoryById(r.categoryId).label)}</div></div><div><span class="mini muted">Prévu signature</span><div class="money">${eur(r.estimatedCost)}</div></div><div><span class="mini muted">Total réel saisi</span><div class="money delta ${cls}">${eur(r.actual)} • ${r.delta>=0?'+':''}${eur(r.delta)}</div></div></div><div class="line-expenses">${r.expenses.length?r.expenses.map((e,i)=>`<div class="line-expense-row" data-expense-index="${i}"><div><label>Dépense / facture</label><input class="le-label" value="${esc(e.label||'')}" ${readonly?'disabled':''}></div><div><label>Montant HT / coût net</label><input class="le-amount" inputmode="decimal" value="${inputFmt(e.amount)}" ${readonly?'disabled':''}></div>${readonly?'':'<button class="btn danger le-remove" type="button">×</button>'}</div>`).join(''):'<div class="muted mini" style="margin-top:8px">Aucune dépense réelle saisie sur ce poste.</div>'}</div><div class="actions">${readonly?'':`<button class="btn add-line-expense" type="button">+ Ajouter une dépense</button>`}<select class="real-line-status" ${readonly?'disabled':''}><option value="pending" ${r.status!=='complete'?'selected':''}>À compléter</option><option value="complete" ${r.status==='complete'?'selected':''}>Complet</option></select></div></div>`}).join(''):'<div class="summary-note">Aucun poste n’était présent dans la prévision signature. Utilise les dépenses directes hors lignes du devis pour détailler matériaux, péages et autres coûts.</div>';
+  const d=projectionLineData(p);
+  $('actualLinesContainer').innerHTML=d.rows.length?d.rows.map(r=>{const count=r.expenses.length,total=r.actual,status=r.status==='complete'?'complete':'pending';return `<details class="accordion-row" data-no="${esc(r.no)}"><summary><div class="accordion-title">${esc(r.no)} — ${esc(r.description)}</div><div class="accordion-meta">${count} dépense${count>1?'s':''}</div><div class="accordion-total">${eur(total)}</div><div class="accordion-status ${status}">${status==='complete'?'Complet':'À compléter'}</div></summary><div class="accordion-body"><div class="mini muted">Prévu à la signature : ${eur(r.estimatedCost)}</div><div class="line-expenses">${r.expenses.length?r.expenses.map((e,i)=>`<div class="line-expense-row" data-expense-index="${i}"><div><label>Dépense / facture</label><input class="le-label" value="${esc(e.label||'')}" ${readonly?'disabled':''}></div><div><label>Montant HT / coût net</label><input class="le-amount" inputmode="decimal" value="${inputFmt(e.amount)}" ${readonly?'disabled':''}></div>${readonly?'':'<button class="btn danger le-remove" type="button">×</button>'}</div>`).join(''):'<div class="muted mini" style="margin-top:8px">Aucune dépense réelle saisie sur ce poste.</div>'}</div><div class="actions">${readonly?'':`<button class="btn add-line-expense" type="button">+ Ajouter une dépense</button>`}<select class="real-line-status" ${readonly?'disabled':''}><option value="pending" ${r.status!=='complete'?'selected':''}>À compléter</option><option value="complete" ${r.status==='complete'?'selected':''}>Complet</option></select></div></div></details>`}).join(''):'<div class="summary-note">Aucun poste dans la prévision signature.</div>';
   if(readonly)return;
-  document.querySelectorAll('#actualLinesContainer .actual-line-card').forEach(card=>{const no=card.dataset.no,e=ensureLineCostEntry(p,no);card.querySelector('.add-line-expense')?.addEventListener('click',()=>{e.expenses.push({id:uid(),label:'Nouvelle dépense',amount:0});saveApp();renderActual()});card.querySelector('.real-line-status').addEventListener('change',ev=>{e.status=ev.target.value;saveApp();renderActual()});card.querySelectorAll('[data-expense-index]').forEach(row=>{const i=Number(row.dataset.expenseIndex),x=e.expenses[i];row.querySelector('.le-label').addEventListener('change',ev=>{x.label=ev.target.value;saveApp();renderActual()});row.querySelector('.le-amount').addEventListener('change',ev=>{x.amount=num(ev.target.value);saveApp();renderActual()});row.querySelector('.le-remove').addEventListener('click',()=>{e.expenses.splice(i,1);saveApp();renderActual()})})})
+  document.querySelectorAll('#actualLinesContainer .accordion-row').forEach(card=>{const no=card.dataset.no,e=ensureLineCostEntry(p,no);card.querySelector('.add-line-expense')?.addEventListener('click',()=>{e.expenses.push({id:uid(),label:'Nouvelle dépense',amount:0});saveApp();renderActual();setTimeout(()=>{document.querySelector(`#actualLinesContainer [data-no="${CSS.escape(no)}"]`)?.setAttribute('open','')},0)});card.querySelector('.real-line-status').addEventListener('change',ev=>{e.status=ev.target.value;saveApp();renderActual()});card.querySelectorAll('[data-expense-index]').forEach(row=>{const i=Number(row.dataset.expenseIndex),x=e.expenses[i];row.querySelector('.le-label').addEventListener('change',ev=>{x.label=ev.target.value;saveApp();renderActual()});row.querySelector('.le-amount').addEventListener('change',ev=>{x.amount=num(ev.target.value);saveApp();renderActual()});row.querySelector('.le-remove').addEventListener('click',()=>{e.expenses.splice(i,1);saveApp();renderActual()})})})
 }
 function pilotTarget(){return Math.max(Number(app?.finance?.targetResultPerDay)||0,0)}
 function renderPilotBoard(p,m,base,quality){
@@ -1494,24 +1503,21 @@ function renderPilotBoard(p,m,base,quality){
     <div class="pilot-signal ${completeness}"><div class="pilot-title">Qualité des données</div><div class="pilot-value">${incomplete?`${incomplete} incomplet(s)`:'À jour'}</div><div class="pilot-note">${dataText}</div></div>`;
 }
 function renderActual(){
-  const p=activeProject(),actualCards=['pilotBoardCard','trackingModeCard','dailyEntryCard','dailyProfitCard','retrospectiveCard','actualProgressCard','actualCostsCard','actualWorkersCard','lineProgressCard','actualLinesCard'];
+  const p=activeProject(),actualCards=['dailyEntryCard','retrospectiveCard','actualProgressCard','actualCostsCard','actualWorkersCard','lineProgressCard','actualLinesCard'];
   if(!p){actualCards.forEach(id=>$(id).classList.add('hidden'));$('actualKpis').innerHTML='';$('actualComparison').innerHTML='<div class="summary-note">Ouvre d’abord un chantier.</div>';$('actualFinishActions').innerHTML='';return}
-  if(!p.previsionFrozen){actualCards.forEach(id=>$(id).classList.add('hidden'));$('actualStatus').className='status warn';$('actualStatus').textContent='Prévision à figer';$('actualKpis').innerHTML='';$('actualComparison').innerHTML='<div class="summary-note">Fige d’abord la « Prévision signature ». Le suivi réel doit toujours être comparé à une photo de départ intouchable.</div>';$('actualFinishActions').innerHTML='';return}
+  if(!p.previsionFrozen){actualCards.forEach(id=>$(id).classList.add('hidden'));$('actualStatus').className='status warn';$('actualStatus').textContent='Prévision à figer';$('actualKpis').innerHTML='';$('actualComparison').innerHTML='<div class="summary-note">Fige d’abord la « Prévision signature ».</div>';$('actualFinishActions').innerHTML='';return}
   actualCards.forEach(id=>$(id).classList.remove('hidden'));const readonly=p.status==='completed';renderTrackingMode(p,readonly);syncTrackingIntoActual(p);
   const snap=p.signatureSnapshot,a=p.actual,finalV09=readonly&&a.finalSnapshot?.engineVersion==='0.9',m=finalV09?a.finalSnapshot.metrics:actualProjectionMetrics(p,readonly),base=signatureMetrics(p),quality=signatureQuality(p),deltaDay=m.resultBeforeTaxPerDay-base.resultBeforeTaxPerDay;
   $('actualStatus').className=`status ${readonly?'ok':p.status==='in_progress'?'warn':'ok'}`;$('actualStatus').textContent=readonly?'Terminé':p.status==='in_progress'?'Suivi en cours':'Prêt à démarrer';
-  $('actualKpis').innerHTML=[['Prévu signature',`${eur(base.resultBeforeTaxPerDay)}/j`,'résultat avant IS'],['Projection actualisée',m.days?`${eur(m.resultBeforeTaxPerDay)}/j`:'—','résultat avant IS'],['Écart / jour',quality.reliable&&m.days?`${deltaDay>=0?'+':''}${eur(deltaDay)}/j`:'Non fiable',quality.reliable?(deltaDay>=0?'mieux que prévu':'moins bien que prévu'):'prévision legacy incomplète'],['Durée prévue',`${nfr(base.days)} j`,'signature figée'],['Durée actualisée',`${nfr(m.economicDays??m.days)} j`,'temps exact utilisé pour les coûts'],['Coûts postes incomplets',m.lineData?.incomplete??0,'à compléter avant bilan final']].map(x=>`<div class="kpi"><div class="name">${x[0]}</div><div class="value">${x[1]}</div><div class="note">${x[2]}</div></div>`).join('');
-  renderPilotBoard(p,m,base,quality);
-  ['trackingModeCard','actualProgressCard','actualCostsCard','actualWorkersCard','actualLinesCard'].forEach(id=>$(id).classList.toggle('locked',readonly));
-  $('elapsedTimeMode').value='hour';$('elapsedTimeValue').value=`${nfr(a.elapsedTimeValue)} h`;$('elapsedDaysEquivalent').value=`${nfr(m.elapsedDays)} jour(s) réel(s)`;$('actualTimeMode').value=a.timeMode;$('actualTimeValue').value=inputFmt(a.timeValue);$('actualDaysEquivalent').value=`${nfr(m.days)} jour(s) retenu(s)${m.exactProjectedDays!==m.days?` • ${nfr(m.exactProjectedDays)} j exacts`:''}`;
+  $('actualKpis').innerHTML=[['Rentabilité actuelle',m.days?`${eur(m.resultBeforeTaxPerDay)}/j`:'—',m.resultBeforeTaxPerDay>=pilotTarget()?'Objectif atteint':'Sous l’objectif'],['Écart avec le devis',quality.reliable&&m.days?`${deltaDay>=0?'+':''}${eur(deltaDay)}/j`:'—',`Prévu : ${eur(base.resultBeforeTaxPerDay)}/j`],['Temps réellement enregistré',`${nfr(m.elapsedDays||0)} j`,`${nfr(a.elapsedTimeValue||0)} h saisies`],['Données à compléter',m.lineData?.incomplete??0,'postes restant à finaliser']].map(x=>`<div class="kpi"><div class="name">${x[0]}</div><div class="value">${x[1]}</div><div class="note">${x[2]}</div></div>`).join('');
+  ['actualProgressCard','actualCostsCard','actualWorkersCard','actualLinesCard'].forEach(id=>$(id).classList.toggle('locked',readonly));
+  $('elapsedTimeMode').value='hour';$('elapsedTimeValue').value=`${nfr(a.elapsedTimeValue)} h`;$('elapsedDaysEquivalent').value=`${nfr(m.elapsedDays)} jour(s) réel(s)`;$('actualTimeMode').value=a.timeMode;$('actualTimeValue').value=inputFmt(a.timeValue);$('actualDaysEquivalent').value=`${nfr(m.days)} jour(s) projeté(s)`;
   const durationLocked=readonly||a.trackingMode==='retrospective';['actualTimeMode','actualTimeValue'].forEach(id=>$(id).disabled=durationLocked);
-  $('actualProgressBar').style.width=`${m.progress||0}%`;$('actualProgressText').textContent=`${nfr(m.progress||0,1)} % du temps projeté • ${nfr(m.elapsedDays||0)} j réels sur ${nfr(m.days||0)} j retenus`;
-  $('actualDerivedCosts').innerHTML=`<div><b>${nfr(m.miniDays)} j</b><span>mini-pelle projetée • ${eur(m.miniCost)}${m.miniDays!==m.observedMiniDays?` • ${nfr(m.observedMiniDays)} j constaté(s)`:''}</span></div><div><b>${nfr(m.mealCount)}</b><span>repas projetés • ${eur(m.mealCost)}${m.mealCount!==m.observedMeals?` • ${nfr(m.observedMeals)} saisi(s)`:''}</span></div><div><b>${eur(m.rental)}</b><span>locations</span></div><div><b>${eur(m.otherDirect)}</b><span>dépenses directes</span></div>`;
-  $('actualCostStrip').innerHTML=`<div><b>${eur(m.lineData?.projected||0)}</b><span>coûts postes projetés</span></div><div><b>${eur(m.externalCost)}</b><span>renfort retenu</span></div><div><b>${eur(m.structureAllocated)}</b><span>structure calculée au temps exact</span></div><div><b>${eur(m.remunerationAllocated)}</b><span>rémunération calculée au temps exact</span></div>`;
-  renderDailyLog(p,readonly);renderDailyProfit(p);renderExpenseLists(p,readonly);renderActualWorkers(p,readonly);renderLineProgress(p,readonly);renderActualLines(p,readonly);
+  $('actualProgressBar').style.width=`${m.progress||0}%`;$('actualProgressText').textContent=`${nfr(m.progress||0,1)} % du temps projeté • ${nfr(m.elapsedDays||0)} j réellement saisis sur ${nfr(m.days||0)} j projetés`;
+  renderDailyLog(p,readonly);renderExpenseLists(p,readonly);renderActualWorkers(p,readonly);renderActualLines(p,readonly);renderLineProgress(p,readonly);
   const deltaTotal=m.resultBeforeTaxTotal-base.resultBeforeTaxTotal,deltaCls=deltaDay>=0?'ok':'bad';
-  const comparison=quality.reliable?`<div class="verdict ${deltaCls}" style="margin-top:12px"><div>${deltaDay>=0?'PROJECTION AU-DESSUS DE LA SIGNATURE':'PROJECTION SOUS LA SIGNATURE'}</div><div class="mini" style="margin-top:7px;font-weight:600">Prévu ${eur(base.resultBeforeTaxPerDay)}/j → actualisé ${eur(m.resultBeforeTaxPerDay)}/j avant IS. Écart ${deltaDay>=0?'+':''}${eur(deltaDay)}/j et ${deltaTotal>=0?'+':''}${eur(deltaTotal)} au total.</div></div>`:`<div class="verdict warn" style="margin-top:12px"><div>⚠️ COMPARAISON SIGNATURE NON FIABLE</div><div class="mini" style="margin-top:7px;font-weight:600">${esc(quality.reason)} Le résultat économique actualisé reste calculé, mais le rouge prévu / réel ne doit pas servir à juger ce chantier.</div></div>`;
-  $('actualComparison').innerHTML=`<div class="stage-kpis"><div class="kpi"><div class="name">Marge après coûts directs</div><div class="value">${eur(m.marginAfterDirectTotal)}</div><div class="note">${eur(m.marginAfterDirectPerDay)}/j</div></div><div class="kpi"><div class="name">Après structure Soléo</div><div class="value">${eur(m.afterStructureTotal)}</div><div class="note">${eur(m.afterStructurePerDay)}/j</div></div><div class="kpi"><div class="name">Résultat avant IS</div><div class="value">${eur(m.resultBeforeTaxTotal)}</div><div class="note">${eur(m.resultBeforeTaxPerDay)}/j</div></div></div>${comparison}<div class="summary-note" style="margin-top:12px"><strong>Lecture V1.2 :</strong> le journal ou la saisie rétrospective est la source du réel. Tant que le chantier n’est pas terminé, la projection garde par prudence au moins les quantités prévues de mini-pelle, repas et renfort, puis augmente si le réel les dépasse.</div>`;
+  const comparison=quality.reliable?`<div class="verdict ${deltaCls}" style="margin-top:12px"><div>${deltaDay>=0?'PROJECTION AU-DESSUS DU DEVIS':'PROJECTION SOUS LE DEVIS'}</div><div class="mini" style="margin-top:7px;font-weight:600">Prévu ${eur(base.resultBeforeTaxPerDay)}/j → actuel ${eur(m.resultBeforeTaxPerDay)}/j. Écart ${deltaDay>=0?'+':''}${eur(deltaDay)}/j, soit ${deltaTotal>=0?'+':''}${eur(deltaTotal)} au total.</div></div>`:`<div class="verdict warn" style="margin-top:12px"><div>Comparaison avec le devis à vérifier</div><div class="mini" style="margin-top:7px;font-weight:600">${esc(quality.reason)}</div></div>`;
+  $('actualComparison').innerHTML=`<div class="stage-kpis"><div class="kpi"><div class="name">Résultat après tous les coûts chantier</div><div class="value">${eur(m.marginAfterDirectTotal)}</div><div class="note">Matériaux, renfort, mini-pelle, repas, locations et dépenses directes déduits</div></div><div class="kpi"><div class="name">Résultat après structure Soléo</div><div class="value">${eur(m.afterStructureTotal)}</div><div class="note">Charges fixes de l’entreprise déduites</div></div><div class="kpi"><div class="name">Résultat avant IS</div><div class="value">${eur(m.resultBeforeTaxTotal)}</div><div class="note">Après structure et coût complet de rémunération Jimmy</div></div></div>${comparison}`;
   const frozenAt=a.finalSnapshot?.frozenAt;$('actualFinishActions').innerHTML=readonly?`<div class="summary-ok">🔒 Bilan final figé${frozenAt?` le ${new Date(frozenAt).toLocaleString('fr-FR')}`:''}.</div>`:'<button class="btn primary" id="finishProjectBtn">✅ Marquer le chantier terminé et figer le bilan réel</button>';$('finishProjectBtn')?.addEventListener('click',()=>finishProject(p,m));
 }
 function finishProject(p,m){

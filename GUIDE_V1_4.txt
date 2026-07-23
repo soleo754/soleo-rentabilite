@@ -1,0 +1,19 @@
+SOLÉO PILOT — RENTABILITÉ LAB V1.4 FLUIDITÉ CHANTIER
+
+Principales modifications :
+- Tableau de bord fusionné et ramené à 4 indicateurs.
+- Temps réellement saisi séparé de la durée totale projetée.
+- Mode quotidien / rétrospectif compact.
+- Saisie Jimmy et renfort en heures ou en jours.
+- Locations et dépenses générales simplifiées.
+- Renforts réels datés, sans affichage du renfort théorique de 14 jours.
+- Coûts réels par poste repliables avec nombre de dépenses, cumul et statut.
+- Coûts par poste placés avant la validation des lignes.
+- Lignes validées regroupées dans une section repliable.
+- Bouton de validation des lignes toujours visible.
+- Rentabilité affichée par poste / étape validée.
+- Avancement et durée déplacés vers le bas de page.
+- Résultats financiers finaux renommés et expliqués.
+
+Déploiement Cloudflare : envoyer les trois fichiers index.html, _headers et GUIDE_V1_4.txt.
+Faire une sauvegarde JSON avant la mise à jour.
